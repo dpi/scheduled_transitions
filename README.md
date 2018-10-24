@@ -2,6 +2,25 @@ Scheduled Transitions
 
 https://www.drupal.org/project/scheduled_transitions
 
+# Tips
+
+Scheduled Transitions are run in a two step process, first, Drupal queue items
+are created after a transition is ready to be run (`drush sctr-jobs`). The 
+scheduled update is also locked from being added to queues in the meantime.
+
+Then, the queue should be run, it can be executed during regular cron, or you
+can force it with a `drush queue:run` command.
+
+```sh
+# Create queue items.
+drush scheduled-transitions:queue-jobs
+# Process the queue.
+drush queue:run scheduled_transition_job
+```
+
+Ideally, each of these commands should be run very often. Preferably every 1-5
+minutes.
+
 # License
 
 This program is free software; you can redistribute it and/or modify

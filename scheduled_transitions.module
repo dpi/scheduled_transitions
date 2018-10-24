@@ -1,0 +1,20 @@
+<?php
+
+/**
+ * @file
+ * Hooks for Scheduled Transitions module.
+ */
+
+declare(strict_types = 1);
+
+use Drupal\scheduled_transitions\ScheduledTransitionsEntityHooks;
+
+/**
+ * Implements hook_entity_type_build().
+ *
+ * @see \Drupal\scheduled_transitions\ScheduledTransitionsEntityHooks::entityTypeBuild
+ */
+function scheduled_transitions_entity_type_build(array &$entity_types) {
+  \Drupal::classResolver(ScheduledTransitionsEntityHooks::class)
+    ->entityTypeBuild($entity_types);
+}
