@@ -7,6 +7,7 @@ namespace Drupal\scheduled_transitions\Plugin\QueueWorker;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Queue\QueueWorkerBase;
+use Drupal\scheduled_transitions\Exception\ScheduledTransitionMissingEntity;
 use Drupal\scheduled_transitions\ScheduledTransitionsRunnerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -80,7 +81,12 @@ class ScheduledTransitionJob extends QueueWorkerBase implements ContainerFactory
     $id = $data[static::SCHEDULED_TRANSITION_ID];
     $transition = $this->scheduledTransitionStorage->load($id);
     if ($transition) {
-      $this->scheduledTransitionsRunner->runTransition($transition);
+      try {
+        $this->scheduledTransitionsRunner->runTransition($transition);
+      }
+      catch (ScheduledTransitionMissingEntity $exception) {
+        $transition->delete();
+      }
     }
   }
 

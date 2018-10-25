@@ -18,6 +18,10 @@ interface ScheduledTransitionsRunnerInterface {
    *
    * @param \Drupal\scheduled_transitions\Entity\ScheduledTransitionInterface $scheduledTransition
    *   A scheduled transition.
+   *
+   * @throws \Drupal\scheduled_transitions\Exception\ScheduledTransitionMissingEntity
+   *   Thrown if any entity or entity revision is missing for a transition.
+   *   Transition is never automatically deleted if exception is thrown.
    */
   public function runTransition(ScheduledTransitionInterface $scheduledTransition): void;
 

@@ -12,6 +12,7 @@ use Drupal\Core\Entity\RevisionLogInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\scheduled_transitions\Entity\ScheduledTransition;
 use Drupal\scheduled_transitions\Entity\ScheduledTransitionInterface;
+use Drupal\scheduled_transitions\Exception\ScheduledTransitionMissingEntity;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -74,23 +75,43 @@ class ScheduledTransitionsRunner implements ScheduledTransitionsRunnerInterface 
    * {@inheritdoc}
    */
   public function runTransition(ScheduledTransitionInterface $scheduledTransition): void {
-    $entityTypeId = $scheduledTransition->getEntity()->getEntityTypeId();
+    $scheduledTransitionId = $scheduledTransition->id();
+    $targs = [
+      '@id' => $scheduledTransitionId,
+    ];
+
+    $entity = $scheduledTransition->getEntity();
+    if (!$entity) {
+      $this->logger->info('Entity does not exist for scheduled transition #@id', $targs);
+      throw new ScheduledTransitionMissingEntity(sprintf('Entity does not exist for scheduled transition #%s', $scheduledTransitionId));
+    }
 
     /** @var \Drupal\Core\Entity\EntityStorageInterface|\Drupal\Core\Entity\RevisionableStorageInterface $entityStorage */
-    $entityStorage = $this->entityTypeManager->getStorage($entityTypeId);
+    $entityStorage = $this->entityTypeManager->getStorage($entity->getEntityTypeId());
 
-    /** @var \Drupal\Core\Entity\EntityInterface|\Drupal\Core\Entity\RevisionableInterface $newRevision */
     $entityRevisionId = $scheduledTransition->getEntityRevisionId();
-    $newRevision = $entityStorage->loadRevision($entityRevisionId);
-    /** @var \Drupal\Core\Entity\EntityInterface|\Drupal\Core\Entity\RevisionableInterface $latest */
-    $latestRevisionId = $entityStorage->getLatestRevisionId($newRevision->id());
-    $latest = $entityStorage->loadRevision($latestRevisionId);
+    if ($entityRevisionId) {
+      /** @var \Drupal\Core\Entity\EntityInterface|\Drupal\Core\Entity\RevisionableInterface $newRevision */
+      $newRevision = $entityStorage->loadRevision($entityRevisionId);
+    }
+    if (!isset($newRevision)) {
+      $this->logger->info('Target revision does not exist for scheduled transition #@id', $targs);
+      throw new ScheduledTransitionMissingEntity(sprintf('Target revision does not exist for scheduled transition #%s', $scheduledTransitionId));
+    }
+
+    $latestRevisionId = $entityStorage->getLatestRevisionId($entity->id());
+    if ($latestRevisionId) {
+      /** @var \Drupal\Core\Entity\EntityInterface|\Drupal\Core\Entity\RevisionableInterface $latest */
+      $latest = $entityStorage->loadRevision($latestRevisionId);
+    }
+    if (!isset($latest)) {
+      $this->logger->info('Latest revision does not exist for scheduled transition #@id', $targs);
+      throw new ScheduledTransitionMissingEntity(sprintf('Latest revision does not exist for scheduled transition #%s', $scheduledTransitionId));
+    }
 
     $this->transitionEntity($scheduledTransition, $newRevision, $latest);
+    $this->logger->info('Deleted scheduled transition #@id', $targs);
 
-    $this->logger->info('Deleted scheduled transition #@id', [
-      '@id' => $scheduledTransition->id(),
-    ]);
     $scheduledTransition->delete();
   }
 
