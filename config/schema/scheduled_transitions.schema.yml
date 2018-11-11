@@ -1,0 +1,8 @@
+# Schema for \Drupal\scheduled_transitions\Plugin\views\field\ScheduledTransitionRevisionLinkField plugin.
+views.field.scheduled_transitions_revision_link:
+  type: views_field
+  label: 'Link to a entity revision'
+  mapping:
+    text:
+      type: label
+      label: 'Text to display'

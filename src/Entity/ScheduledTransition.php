@@ -18,13 +18,14 @@ use Drupal\workflows\WorkflowInterface;
  *
  * @ContentEntityType(
  *   id = "scheduled_transition",
- *   label = @Translation("Scheduled transition"),
+ *   label = @Translation("scheduled transition"),
  *   label_singular = @Translation("Scheduled transition"),
- *   label_plural = @Translation("Scheduled transitions"),
+ *   label_plural = @Translation("scheduled transitions"),
  *   label_count = @PluralTranslation(
  *     singular = "@count scheduled transition",
  *     plural = "@count scheduled transitions"
  *   ),
+ *   label_collection = @Translation("Scheduled transitions"),
  *   base_table = "scheduled_transition",
  *   data_table = "scheduled_transition_field_data",
  *   translatable = FALSE,
@@ -34,9 +35,11 @@ use Drupal\workflows\WorkflowInterface;
  *     "uid" = "author",
  *   },
  *   internal = TRUE,
+ *   admin_permission = "view all scheduled transitions",
  *   handlers = {
  *     "access" = "Drupal\scheduled_transitions\ScheduledTransitionsAccessControlHandler",
- *     "list_builder" = "Drupal\Core\Entity\EntityListBuilder",
+ *     "list_builder" = "Drupal\scheduled_transitions\ScheduledTransitionsListBuilder",
+ *     "views_data" = "Drupal\scheduled_transitions\ScheduledTransitionsViewsData",
  *     "form" = {
  *       "delete" = "Drupal\Core\Entity\ContentEntityDeleteForm",
  *     },
@@ -45,6 +48,7 @@ use Drupal\workflows\WorkflowInterface;
  *     }
  *   },
  *   links = {
+ *     "collection" = "/admin/content/scheduled-transitions",
  *     "delete-form" = "/admin/scheduled-transition/{scheduled_transition}/delete",
  *   },
  * )

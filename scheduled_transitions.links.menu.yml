@@ -1,0 +1,5 @@
+entity.scheduled_transition.collection:
+  title: Scheduled transitions
+  route_name: entity.scheduled_transition.collection
+  parent: system.admin_content
+  description: 'List of all scheduled transitions.'
