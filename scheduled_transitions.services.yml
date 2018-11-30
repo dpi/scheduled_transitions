@@ -5,7 +5,7 @@ services:
 
   scheduled_transitions.runner:
     class: 'Drupal\scheduled_transitions\ScheduledTransitionsRunner'
-    arguments: ['@entity_type.manager', '@datetime.time', '@logger.channel.scheduled_transitions', '@content_moderation.moderation_information']
+    arguments: ['@entity_type.manager', '@config.factory', '@datetime.time', '@logger.channel.scheduled_transitions', '@content_moderation.moderation_information', '@token']
 
   scheduled_transitions.jobs:
     class: 'Drupal\scheduled_transitions\ScheduledTransitionsJobs'

@@ -7,6 +7,7 @@
 
 declare(strict_types = 1);
 
+use Drupal\Core\Render\BubbleableMetadata;
 use Drupal\scheduled_transitions\ScheduledTransitionsEntityHooks;
 
 /**
@@ -17,4 +18,81 @@ use Drupal\scheduled_transitions\ScheduledTransitionsEntityHooks;
 function scheduled_transitions_entity_type_build(array &$entity_types) {
   \Drupal::classResolver(ScheduledTransitionsEntityHooks::class)
     ->entityTypeBuild($entity_types);
+}
+
+/**
+ * Implements hook_token_info().
+ */
+function scheduled_transitions_token_info(): array {
+  $type = [
+    'name' => \t('Scheduled Transitions'),
+    'description' => \t('Tokens related to scheduled transitions.'),
+    'needs-data' => 'scheduled-transitions',
+  ];
+
+  $scheduledTransitions['to-state'] = [
+    'name' => \t('To state'),
+    'description' => \t('The name of the state being transitioned to.'),
+  ];
+
+  $scheduledTransitions['from-state'] = [
+    'name' => \t('From state'),
+    'description' => \t('The name of the state being transitioned from.'),
+  ];
+
+  $scheduledTransitions['from-revision-id'] = [
+    'name' => \t('Target Revision ID'),
+    'description' => \t('The revision ID which is being transitioned from.'),
+  ];
+
+  $scheduledTransitions['latest-revision-id'] = [
+    'name' => \t('Latest Revision ID'),
+    'description' => \t('The latest revision ID for an entity before transitioning.'),
+  ];
+
+  $scheduledTransitions['latest-revision-id'] = [
+    'name' => \t('Latest Revision state'),
+    'description' => \t('The latest revision state for an entity before transitioning.'),
+  ];
+
+  return [
+    'types' => ['scheduled-transitions' => $type],
+    'tokens' => ['scheduled-transitions' => $scheduledTransitions],
+  ];
+}
+
+/**
+ * Implements hook_tokens().
+ */
+function scheduled_transitions_tokens($type, $tokens, array $data, array $options, BubbleableMetadata $bubbleable_metadata) {
+  $replacements = [];
+
+  $scheduledTransitionData = $data['scheduled-transitions'] ?? NULL;
+  if ($type == 'scheduled-transitions' && $scheduledTransitionData) {
+    foreach ($tokens as $name => $original) {
+      switch ($name) {
+        case 'to-state':
+          $replacements[$original] = $scheduledTransitionData['to-state'];
+          break;
+
+        case 'from-state':
+          $replacements[$original] = $scheduledTransitionData['from-state'];
+          break;
+
+        case 'from-revision-id':
+          $replacements[$original] = $scheduledTransitionData['from-revision-id'];
+          break;
+
+        case 'latest-state':
+          $replacements[$original] = $scheduledTransitionData['from-state'];
+          break;
+
+        case 'latest-revision-id':
+          $replacements[$original] = $scheduledTransitionData['from-revision-id'];
+          break;
+      }
+    }
+  }
+
+  return $replacements;
 }

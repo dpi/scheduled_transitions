@@ -2,3 +2,7 @@ view all scheduled transitions:
   title: 'View all scheduled transitions'
   description: 'Allow viewing all scheduled transitions.'
 
+administer scheduled transitions:
+  title: 'Administer scheduled transitions'
+  description: 'Administer settings for scheduled transitions.'
+  restrict access: TRUE

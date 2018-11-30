@@ -1,0 +1,23 @@
+<?php
+
+/**
+ * @file
+ * Installation hooks for Scheduled Transitions module.
+ */
+
+declare(strict_types = 1);
+
+/**
+ * Adds message template config.
+ *
+ * @param array $sandbox
+ *   Sandbox.
+ */
+function scheduled_transitions_update_8001(array &$sandbox): void {
+  $configFactory = \Drupal::configFactory();
+  $configFactory->getEditable('scheduled_transitions.settings')
+    ->set('message_transition_latest', 'Scheduled transition: transitioning latest revision from [scheduled-transitions:from-state] to [scheduled-transitions:to-state]')
+    ->set('message_transition_historical', 'Copied revision #[scheduled-transitions:from-revision-id] and changed from [scheduled-transitions:from-state] to [scheduled-transitions:to-state]')
+    ->set('message_transition_copy_latest_draft', 'Scheduled transition: reverted [scheduled-transitions:latest-state] revision #[scheduled-transitions:latest-revision-id] back to top')
+    ->save(TRUE);
+}

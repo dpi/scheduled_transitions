@@ -1,3 +1,17 @@
+scheduled_transitions.settings:
+  type: config_object
+  label: 'Scheduled transition settings'
+  mapping:
+    message_transition_latest:
+      type: string
+      label: 'Revision log message used when transitioning latest revision.'
+    message_transition_historical:
+      type: string
+      label: 'Revision log message used when transitioning a non-latest revision.'
+    message_transition_copy_latest_draft:
+      type: string
+      label: 'Revision log message used when shifting a former unpublished revision back on top.'
+
 # Schema for \Drupal\scheduled_transitions\Plugin\views\field\ScheduledTransitionRevisionLinkField plugin.
 views.field.scheduled_transitions_revision_link:
   type: views_field
