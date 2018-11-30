@@ -34,7 +34,7 @@ class ScheduledTransitionsSettingsForm extends ConfigFormBase {
       '#type' => 'textarea',
       '#title' => $this->t('Latest'),
       '#default_value' => $this->config('scheduled_transitions.settings')->get('message_transition_latest'),
-      '#description' => $this->t('Available tokens: [scheduled-transitions:from-state] [scheduled-transitions:to-state]'),
+      '#description' => $this->t('Available tokens: [scheduled-transitions:from-revision-id] [scheduled-transitions:from-state] [scheduled-transitions:to-state]'),
     ];
     $form['message_transition_historical'] = [
       '#type' => 'textarea',
