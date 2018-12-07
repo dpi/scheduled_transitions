@@ -7,8 +7,33 @@
 
 declare(strict_types = 1);
 
+use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Render\BubbleableMetadata;
+use Drupal\Core\Url;
+use Drupal\scheduled_transitions\Routing\ScheduledTransitionsRouteProvider;
 use Drupal\scheduled_transitions\ScheduledTransitionsEntityHooks;
+
+/**
+ * Implements hook_entity_operation().
+ */
+function scheduled_transitions_entity_operation(EntityInterface $entity): array {
+  $operations = [];
+
+  if ($entity->getEntityType()->hasLinkTemplate(ScheduledTransitionsRouteProvider::LINK_TEMPLATE_ADD)) {
+    $routeName = ScheduledTransitionsRouteProvider::getScheduledTransitionRouteName($entity->getEntityType());
+    $url = Url::fromRoute($routeName, [$entity->getEntityTypeId() => $entity->id()]);
+    $user = \Drupal::currentUser();
+    if (TRUE === $url->access($user)) {
+      $operations['scheduled_transitions'] = [
+        'title' => \t('Scheduled transitions'),
+        'url' => $url,
+        'weight' => 50,
+      ];
+    }
+  }
+
+  return $operations;
+}
 
 /**
  * Implements hook_entity_type_build().
