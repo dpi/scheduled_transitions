@@ -21,6 +21,26 @@ function scheduled_transitions_entity_type_build(array &$entity_types) {
 }
 
 /**
+ * Implements hook_theme().
+ */
+function scheduled_transitions_theme(array $existing, string $type, string $theme, string $path): array {
+  return [
+    'scheduled_transitions_form_add' => [
+      'render element' => 'form',
+    ],
+  ];
+}
+
+/**
+ * Implements hook_preprocess_HOOK().
+ *
+ * HOOK: scheduled_transitions_form_add.
+ */
+function template_preprocess_scheduled_transitions_form_add(array &$variables): void {
+  $variables['#attached']['library'][] = 'scheduled_transitions/form_add';
+}
+
+/**
  * Implements hook_token_info().
  */
 function scheduled_transitions_token_info(): array {

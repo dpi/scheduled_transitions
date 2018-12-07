@@ -82,6 +82,8 @@ class ScheduledTransitionAddForm extends ContentEntityForm {
    * {@inheritdoc}
    */
   public function form(array $form, FormStateInterface $form_state): array {
+    $form['#theme'] = 'scheduled_transitions_form_add';
+
     $entity = $this->getEntity();
 
     $header = [];
