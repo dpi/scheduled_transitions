@@ -104,11 +104,11 @@ function scheduled_transitions_tokens($type, $tokens, array $data, array $option
           break;
 
         case 'latest-state':
-          $replacements[$original] = $scheduledTransitionData['from-state'];
+          $replacements[$original] = $scheduledTransitionData['latest-state'];
           break;
 
         case 'latest-revision-id':
-          $replacements[$original] = $scheduledTransitionData['from-revision-id'];
+          $replacements[$original] = $scheduledTransitionData['latest-revision-id'];
           break;
       }
     }

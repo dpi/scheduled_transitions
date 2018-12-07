@@ -45,6 +45,7 @@ class ScheduledTransitionTest extends KernelTestBase {
     $this->installEntitySchema('user');
     $this->installEntitySchema('scheduled_transition');
     $this->installSchema('system', ['queue']);
+    $this->installConfig(['scheduled_transitions']);
   }
 
   /**

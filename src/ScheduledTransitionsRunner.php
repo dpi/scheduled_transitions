@@ -177,8 +177,8 @@ class ScheduledTransitionsRunner implements ScheduledTransitionsRunnerInterface 
         'to-state' => $targs['@new_state'],
         'from-state' => $targs['@original_state'],
         'from-revision-id' => $targs['@revision_id'],
-        'latest-state' => $targs['@original_revision_id'],
-        'latest-revision-id' => $targs['@original_latest_state'],
+        'latest-state' => $targs['@original_latest_state'],
+        'latest-revision-id' => $targs['@original_revision_id'],
       ],
     ];
 
@@ -220,7 +220,7 @@ class ScheduledTransitionsRunner implements ScheduledTransitionsRunnerInterface 
           if ($latest instanceof RevisionLogInterface) {
             $template = $settings->get('message_transition_copy_latest_draft');
             $log = $this->token->replace($template, $tokenData);
-            $newRevision->setRevisionLogMessage($log);
+            $latest->setRevisionLogMessage($log);
             $latest->setRevisionCreationTime($this->time->getRequestTime());
           }
           $latest->save();
