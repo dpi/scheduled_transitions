@@ -1,0 +1,3 @@
+administer st_entity_test entities:
+  title: 'Full access to st_entity_test'
+  restrict access: true

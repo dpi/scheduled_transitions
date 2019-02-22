@@ -1,0 +1,4 @@
+entity.scheduled_transitions_test.canonical:
+  route_name: entity.scheduled_transitions_test.canonical
+  base_route: entity.scheduled_transitions_test.canonical
+  title: 'View'

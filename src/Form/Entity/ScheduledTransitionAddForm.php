@@ -5,6 +5,7 @@ declare(strict_types = 1);
 namespace Drupal\scheduled_transitions\Form\Entity;
 
 use Drupal\Component\Datetime\TimeInterface;
+use Drupal\Component\Utility\Xss;
 use Drupal\content_moderation\ModerationInformationInterface;
 use Drupal\Core\Datetime\DateFormatterInterface;
 use Drupal\Core\Entity\ContentEntityForm;
@@ -349,8 +350,15 @@ class ScheduledTransitionAddForm extends ContentEntityForm {
             ->format($entityRevision->getRevisionCreationTime());
           $revisionUser = $entityRevision->getRevisionUser();
           $option['revision_author']['data'] = $revisionUser ? $revisionUser->toLink() : $this->t('- Missing user -');
-          $revisionLog = $entityRevision->getRevisionLogMessage();
-          $option['revision_log']['data'] = !empty($revisionLog) ? ['#plain_text' => $revisionLog] : $this->t('<em>- None -</em>');
+          if ($revisionLog = $entityRevision->getRevisionLogMessage()) {
+            $option['revision_log']['data'] = [
+              '#markup' => $revisionLog,
+              '#allowed_tags' => Xss::getHtmlTagList(),
+            ];
+          }
+          else {
+            $option['revision_log']['data'] = $this->t('<em>- None -</em>');
+          }
         }
 
         return $option;
