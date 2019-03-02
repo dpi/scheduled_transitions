@@ -11,6 +11,7 @@ use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Entity\RevisionLogInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
+use Drupal\Core\TypedData\TranslatableInterface;
 use Drupal\Core\Utility\Token;
 use Drupal\scheduled_transitions\Entity\ScheduledTransition;
 use Drupal\scheduled_transitions\Entity\ScheduledTransitionInterface;
@@ -119,6 +120,11 @@ class ScheduledTransitionsRunner implements ScheduledTransitionsRunnerInterface 
     if (!isset($newRevision)) {
       $this->logger->info('Target revision does not exist for scheduled transition #@id', $targs);
       throw new ScheduledTransitionMissingEntity(sprintf('Target revision does not exist for scheduled transition #%s', $scheduledTransitionId));
+    }
+
+    $entityRevisionLanguage = $scheduledTransition->getEntityRevisionLanguage();
+    if ($entityRevisionLanguage && $newRevision instanceof TranslatableInterface && $newRevision->hasTranslation($entityRevisionLanguage)) {
+      $newRevision = $newRevision->getTranslation($entityRevisionLanguage);
     }
 
     $latestRevisionId = $entityStorage->getLatestRevisionId($entity->id());

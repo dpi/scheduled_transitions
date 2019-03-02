@@ -6,6 +6,7 @@ namespace Drupal\scheduled_transitions\Plugin\Menu\LocalTask;
 
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\Core\Menu\LocalTaskDefault;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Routing\RouteMatchInterface;
@@ -43,6 +44,13 @@ class ScheduledTransitionsLocalTask extends LocalTaskDefault implements Containe
   protected $entityTypeManager;
 
   /**
+   * The language manager.
+   *
+   * @var \Drupal\Core\Language\LanguageManagerInterface
+   */
+  protected $languageManager;
+
+  /**
    * Constructs a new ScheduledTransitionsLocalTask.
    *
    * @param array $configuration
@@ -55,11 +63,14 @@ class ScheduledTransitionsLocalTask extends LocalTaskDefault implements Containe
    *   The current route match.
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
    *   The entity type manager.
+   * @param \Drupal\Core\Language\LanguageManagerInterface $languageManager
+   *   The language manager.
    */
-  public function __construct(array $configuration, $plugin_id, array $plugin_definition, RouteMatchInterface $routeMatch, EntityTypeManagerInterface $entityTypeManager) {
+  public function __construct(array $configuration, $plugin_id, array $plugin_definition, RouteMatchInterface $routeMatch, EntityTypeManagerInterface $entityTypeManager, LanguageManagerInterface $languageManager) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->routeMatch = $routeMatch;
     $this->entityTypeManager = $entityTypeManager;
+    $this->languageManager = $languageManager;
   }
 
   /**
@@ -71,7 +82,8 @@ class ScheduledTransitionsLocalTask extends LocalTaskDefault implements Containe
       $plugin_id,
       $plugin_definition,
       $container->get('current_route_match'),
-      $container->get('entity_type.manager')
+      $container->get('entity_type.manager'),
+      $container->get('language_manager')
     );
   }
 
@@ -85,6 +97,7 @@ class ScheduledTransitionsLocalTask extends LocalTaskDefault implements Containe
       $count = $transitionStorage->getQuery()
         ->condition('entity__target_type', $entity->getEntityTypeId())
         ->condition('entity__target_id', $entity->id())
+        ->condition('entity_revision_langcode', $this->languageManager->getCurrentLanguage()->getId())
         ->count()
         ->execute();
       return $this->t('Scheduled transitions (@count)', [

@@ -31,6 +31,14 @@ interface ScheduledTransitionInterface extends ContentEntityInterface {
   public function getEntityRevisionId();
 
   /**
+   * Get the language of the revision this scheduled transition is for.
+   *
+   * @return string|null
+   *   The revision language code.
+   */
+  public function getEntityRevisionLanguage();
+
+  /**
    * Get the author for this scheduled transition.
    *
    * @return \Drupal\user\UserInterface|null
