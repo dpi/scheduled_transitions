@@ -83,7 +83,11 @@ class ScheduledTransitionRevisionLinkField extends LinkBase {
       ->getStorage($entity->getEntityTypeId())
       ->loadRevision($entityRevisionId);
 
-    return $entityRevision->toUrl('revision');
+    $toUrlArgs = [];
+    if ($entityRevision->hasLinkTemplate('revision')) {
+      $toUrlArgs[] = 'revision';
+    }
+    return $entityRevision->toUrl(...$toUrlArgs);
   }
 
   /**

@@ -6,6 +6,7 @@ namespace Drupal\Tests\scheduled_transitions\Functional;
 
 use Drupal\scheduled_transitions\Routing\ScheduledTransitionsRouteProvider;
 use Drupal\scheduled_transitions_test\Entity\ScheduledTransitionsTestEntity;
+use Drupal\scheduled_transitions_test\Entity\ScheduledTransitionsTestNoRevisionTemplateEntity;
 use Drupal\Tests\BrowserTestBase;
 use Drupal\Tests\content_moderation\Traits\ContentModerationTestTrait;
 
@@ -60,6 +61,40 @@ class ScheduledTransitionModalFormTest extends BrowserTestBase {
     // Check if the log message exists in HTML verbatim, the HTML tags should
     // not be entity encoded.
     $this->assertSession()->responseContains($logMessage);
+  }
+
+  /**
+   * Test using an entity without a revision link template.
+   */
+  public function testNoRevisionLinkTemplate() {
+    $workflow = $this->createEditorialWorkflow();
+    $workflow->getTypePlugin()->addEntityTypeAndBundle('st_entity_test_norevtemplate', 'st_entity_test_norevtemplate');
+    $workflow->save();
+
+    $currentUser = $this->drupalCreateUser([
+      'administer st_entity_test_norevtemplate entities',
+      'use editorial transition create_new_draft',
+      'use editorial transition publish',
+      'use editorial transition archive',
+    ]);
+    $this->drupalLogin($currentUser);
+
+    $entity = ScheduledTransitionsTestNoRevisionTemplateEntity::create(['type' => 'st_entity_test_norevtemplate']);
+    $entity->save();
+
+    // Need to create an extra revision, because out of the box a freshly
+    // created entity will have only one entity, and the toUrl method will
+    // shortcut out, changing rel to 'canonical'.
+    $entity->setNewRevision(TRUE);
+    $entity->setRevisionLogMessage('test rev log msg');
+    $entity->save();
+
+    // Ensure the entity wasn't updated with a 'revision' link template.
+    $this->assertFalse($entity->getEntityType()->hasLinkTemplate('revision'));
+
+    // Access the modal directly.
+    $this->drupalGet($entity->toUrl(ScheduledTransitionsRouteProvider::LINK_TEMPLATE_ADD));
+    $this->assertSession()->statusCodeEquals(200);
   }
 
 }
