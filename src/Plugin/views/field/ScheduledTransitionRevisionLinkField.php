@@ -105,9 +105,6 @@ class ScheduledTransitionRevisionLinkField extends LinkBase {
     if (!$entityRevision) {
       return '';
     }
-//    if (!$entity->getEntityType()->hasLinkTemplate('revision')) {
-//      return '';
-//    }
     $text = parent::renderLink($row);
     $this->options['alter']['query'] = $this->getDestinationArray();
     return $text;
