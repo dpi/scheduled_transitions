@@ -217,7 +217,9 @@ class ScheduledTransitionsRunner implements ScheduledTransitionsRunnerInterface 
       // If the new revision is now a default, and the old latest was not a
       // default (e.g Draft), then pull it back on top.
       if (!empty($options[ScheduledTransition::OPTION_RECREATE_NON_DEFAULT_HEAD])) {
-        if (!$isLatestRevisionPublished) {
+        // To republish, this revision cannot be published, and the state for
+        // this revision must still exist.
+        if (!$isLatestRevisionPublished && $originalLatestState) {
           $latest->setNewRevision();
           $this->logger->info('Reverted @original_latest_state revision #@original_revision_id back to top', $targs);
           if ($latest instanceof RevisionLogInterface) {
