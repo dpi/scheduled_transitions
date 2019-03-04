@@ -140,6 +140,9 @@ class ScheduledTransitionsRunner implements ScheduledTransitionsRunnerInterface 
   /**
    * Transition a revision.
    *
+   * This method is responsible for saving new revision, and any intermediate
+   * revisions if applicable.
+   *
    * @param \Drupal\scheduled_transitions\Entity\ScheduledTransitionInterface $scheduledTransition
    *   A scheduled transition entity.
    * @param \Drupal\Core\Entity\EntityInterface $newRevision

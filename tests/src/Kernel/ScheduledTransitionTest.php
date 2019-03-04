@@ -119,7 +119,7 @@ class ScheduledTransitionTest extends KernelTestBase {
   /**
    * Tests a scheduled revision.
    *
-   * Publish the lateset revision.
+   * Publish the latest revision.
    */
   public function testScheduledRevisionLatestNonDefault() {
     $workflow = $this->createEditorialWorkflow();

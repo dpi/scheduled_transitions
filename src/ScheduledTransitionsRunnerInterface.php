@@ -16,6 +16,11 @@ interface ScheduledTransitionsRunnerInterface {
    *
    * Ignores transition time as it is already checked by job runner.
    *
+   * Pass a transition that should be run. This method is responsible for
+   * loading latest and the new revision, then delegating saving new revision,
+   * and any intermediate revisions if applicable. The transition may also be
+   * deleted depending on settings.
+   *
    * @param \Drupal\scheduled_transitions\Entity\ScheduledTransitionInterface $scheduledTransition
    *   A scheduled transition.
    *
