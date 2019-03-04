@@ -169,10 +169,10 @@ class ScheduledTransitionsRunner implements ScheduledTransitionsRunnerInterface 
 
     $targs = [
       '@revision_id' => $entityRevisionId,
-      '@original_state' => $originalNewRevisionState->label(),
+      '@original_state' => $originalNewRevisionState ? $originalNewRevisionState->label() : $this->t('- Unknown state -'),
       '@new_state' => $newState->label(),
       '@original_revision_id' => $latest->getRevisionId(),
-      '@original_latest_state' => $originalLatestState->label(),
+      '@original_latest_state' => $originalLatestState ? $originalLatestState->label() : $this->t('- Unknown state -'),
     ];
 
     $tokenData = [
