@@ -322,6 +322,90 @@ class ScheduledTransitionTest extends KernelTestBase {
   }
 
   /**
+   * Test when a default or latest revision use a state that no longer exists.
+   *
+   * Log message displays appropriate info.
+   */
+  public function testLogsDeletedState() {
+    $testState1Name = 'foo_default_test_state1';
+    $testState2Name = 'foo_non_default_test_state2';
+    $testState3Name = 'published';
+    $workflow = $this->createEditorialWorkflow();
+    $workflow->getTypePlugin()->addEntityTypeAndBundle('entity_test_revlog', 'entity_test_revlog');
+    $configuration = $workflow->getTypePlugin()->getConfiguration();
+    $configuration['states'][$testState1Name] = [
+      'label' => 'Foo',
+      'published' => TRUE,
+      'default_revision' => TRUE,
+      'weight' => 0,
+    ];
+    $configuration['states'][$testState2Name] = [
+      'label' => 'Foo2',
+      'published' => TRUE,
+      'default_revision' => FALSE,
+      'weight' => 0,
+    ];
+    $workflow->getTypePlugin()->setConfiguration($configuration);
+    $workflow->save();
+
+    $author = User::create([
+      'uid' => 2,
+      'name' => $this->randomMachineName(),
+    ]);
+    $author->save();
+
+    $entity = EntityTestWithRevisionLog::create(['type' => 'entity_test_revlog']);
+    $entity->name = 'foobar1';
+    $entity->moderation_state = $testState1Name;
+    $entity->save();
+    $entityId = $entity->id();
+    $this->assertEquals(1, $entity->getRevisionId());
+
+    $entity->setNewRevision();
+    $entity->name = 'foobar3';
+    $entity->moderation_state = $testState2Name;
+    $entity->save();
+    $this->assertEquals(2, $entity->getRevisionId());
+
+    $scheduledTransition = ScheduledTransition::create([
+      'entity' => $entity,
+      'entity_revision_id' => 1,
+      'author' => $author,
+      'workflow' => $workflow->id(),
+      'moderation_state' => $testState3Name,
+      'transition_on' => (new \DateTime('2 Feb 2018 11am'))->getTimestamp(),
+      'options' => [
+        [ScheduledTransition::OPTION_RECREATE_NON_DEFAULT_HEAD => TRUE],
+      ],
+    ]);
+    $scheduledTransition->save();
+
+    $workflow->getTypePlugin()->deleteState($testState1Name);
+    $workflow->getTypePlugin()->deleteState($testState2Name);
+    $workflow->save();
+
+    $type= $workflow->getTypePlugin();
+
+    // Transitioning the first revision, will also recreate the pending revision
+    // in this workflow because of the OPTION_RECREATE_NON_DEFAULT_HEAD option
+    // above.
+    $this->runTransition($scheduledTransition);
+
+    $logBuffer = $this->getLogBuffer();
+    $logs = $this->getLogs($logBuffer);
+    $this->assertCount(2, $logs);
+    $this->assertEquals('Copied revision #1 and changed from - Unknown state - to Published', $logs[0]['message']);
+    $this->assertEquals('Deleted scheduled transition #1', $logs[1]['message']);
+
+    // Also check context of logs, to ensure missing states are present as
+    // 'Missing' strings.
+    [2 => $context] = $logBuffer[0];
+    $this->assertEqual('- Unknown state -', $context['@original_state']);
+    $this->assertEqual('- Unknown state -', $context['@original_latest_state']);
+    $this->assertEqual('Published', $context['@new_state']);
+  }
+
+  /**
    * Checks and runs any ready transitions.
    *
    * @param \Drupal\scheduled_transitions\Entity\ScheduledTransitionInterface $scheduledTransition
