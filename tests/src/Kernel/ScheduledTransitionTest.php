@@ -218,7 +218,7 @@ class ScheduledTransitionTest extends KernelTestBase {
       'moderation_state' => $newState,
       'transition_on' => (new \DateTime('2 Feb 2018 11am'))->getTimestamp(),
       'options' => [
-        ['recreate_non_default_head' => TRUE],
+        [ScheduledTransition::OPTION_RECREATE_NON_DEFAULT_HEAD => TRUE],
       ],
     ]);
     $scheduledTransition->save();
@@ -295,7 +295,7 @@ class ScheduledTransitionTest extends KernelTestBase {
       'moderation_state' => $newState,
       'transition_on' => (new \DateTime('2 Feb 2018 11am'))->getTimestamp(),
       'options' => [
-        ['recreate_non_default_head' => TRUE],
+        [ScheduledTransition::OPTION_RECREATE_NON_DEFAULT_HEAD => TRUE],
       ],
     ]);
     $scheduledTransition->save();
