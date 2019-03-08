@@ -30,22 +30,31 @@ class ScheduledTransitionsSettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state): array {
+    $settings = $this->config('scheduled_transitions.settings');
+    $form['messages'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Messages'),
+      '#open' => TRUE,
+    ];
     $form['message_transition_latest'] = [
       '#type' => 'textarea',
       '#title' => $this->t('Latest'),
-      '#default_value' => $this->config('scheduled_transitions.settings')->get('message_transition_latest'),
+      '#group' => 'messages',
+      '#default_value' => $settings->get('message_transition_latest'),
       '#description' => $this->t('Available tokens: [scheduled-transitions:from-revision-id] [scheduled-transitions:from-state] [scheduled-transitions:to-state]'),
     ];
     $form['message_transition_historical'] = [
       '#type' => 'textarea',
       '#title' => $this->t('Historical'),
-      '#default_value' => $this->config('scheduled_transitions.settings')->get('message_transition_historical'),
+      '#group' => 'messages',
+      '#default_value' => $settings->get('message_transition_historical'),
       '#description' => $this->t('Available tokens: [scheduled-transitions:from-revision-id] [scheduled-transitions:from-state] [scheduled-transitions:to-state]'),
     ];
     $form['message_transition_copy_latest_draft'] = [
       '#type' => 'textarea',
       '#title' => $this->t('Copy latest draft'),
-      '#default_value' => $this->config('scheduled_transitions.settings')->get('message_transition_copy_latest_draft'),
+      '#group' => 'messages',
+      '#default_value' => $settings->get('message_transition_copy_latest_draft'),
       '#description' => $this->t('Available tokens: [scheduled-transitions:latest-state] [scheduled-transitions:latest-revision-id]'),
     ];
     return parent::buildForm($form, $form_state);
