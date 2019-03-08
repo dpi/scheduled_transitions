@@ -2,6 +2,15 @@ scheduled_transitions.settings:
   type: config_object
   label: 'Scheduled transition settings'
   mapping:
+    mirror_operations:
+      type: mapping
+      mapping:
+        view scheduled transition:
+          type: string
+          label: 'An entity operation. When attempting to view scheduled transitions for an entity, defer access to another operation.'
+        add scheduled transition:
+          type: string
+          label: 'An entity operation.  When attempting to add scheduled transitions for an entity, defer access to another operation.'
     message_transition_latest:
       type: string
       label: 'Revision log message used when transitioning latest revision.'

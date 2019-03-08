@@ -22,4 +22,12 @@ interface ScheduledTransitionsUtilityInterface {
    */
   public function getTransitions(EntityInterface $entity): array;
 
+  /**
+   * Get list of entity type/bundles scheduled transitions can work with.
+   *
+   * @return array
+   *   Arrays of bundles keyed by entity type.
+   */
+  public function getApplicableBundles(): array;
+
 }

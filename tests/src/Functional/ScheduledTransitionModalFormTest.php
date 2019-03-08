@@ -46,6 +46,7 @@ class ScheduledTransitionModalFormTest extends BrowserTestBase {
       'use editorial transition create_new_draft',
       'use editorial transition publish',
       'use editorial transition archive',
+      'add scheduled transitions st_entity_test st_entity_test',
     ]);
     $this->drupalLogin($currentUser);
 
@@ -76,6 +77,7 @@ class ScheduledTransitionModalFormTest extends BrowserTestBase {
       'use editorial transition create_new_draft',
       'use editorial transition publish',
       'use editorial transition archive',
+      'add scheduled transitions st_entity_test_norevtemplate st_entity_test_norevtemplate',
     ]);
     $this->drupalLogin($currentUser);
 

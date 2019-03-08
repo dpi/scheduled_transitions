@@ -1,3 +1,6 @@
+permission_callbacks:
+  - \Drupal\scheduled_transitions\ScheduledTransitionsPermissions::permissions
+
 view all scheduled transitions:
   title: 'View all scheduled transitions'
   description: 'Allow viewing all scheduled transitions.'
