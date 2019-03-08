@@ -7,11 +7,15 @@
 
 declare(strict_types = 1);
 
+use Drupal\Core\Access\AccessResult;
+use Drupal\Core\Access\AccessResultInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Render\BubbleableMetadata;
+use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Url;
 use Drupal\scheduled_transitions\Routing\ScheduledTransitionsRouteProvider;
 use Drupal\scheduled_transitions\ScheduledTransitionsEntityHooks;
+use Drupal\scheduled_transitions\ScheduledTransitionsPermissions as Permissions;
 
 /**
  * Implements hook_entity_operation().
@@ -140,4 +144,14 @@ function scheduled_transitions_tokens($type, $tokens, array $data, array $option
   }
 
   return $replacements;
+}
+
+/**
+ * Implements hook_entity_access().
+ *
+ * @see \Drupal\scheduled_transitions\ScheduledTransitionsEntityHooks::entityAccess
+ */
+function scheduled_transitions_entity_access(EntityInterface $entity, $operation, AccountInterface $account): AccessResultInterface {
+  return \Drupal::classResolver(ScheduledTransitionsEntityHooks::class)
+    ->entityAccess($entity, $operation, $account);
 }
