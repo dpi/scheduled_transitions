@@ -7,7 +7,9 @@ namespace Drupal\scheduled_transitions;
 use Drupal\content_moderation\ModerationInformationInterface;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\Core\Entity\ContentEntityType;
+use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\scheduled_transitions\Entity\ScheduledTransition;
 use Drupal\scheduled_transitions\Form\Entity\ScheduledTransitionAddForm;
 use Drupal\scheduled_transitions\Form\ScheduledTransitionForm;
 use Drupal\scheduled_transitions\Routing\ScheduledTransitionsRouteProvider;
@@ -90,6 +92,17 @@ class ScheduledTransitionsEntityHooks implements ContainerInjectionInterface {
       $entityType
         ->setFormClass(ScheduledTransitionsRouteProvider::FORM_ADD, ScheduledTransitionAddForm::class)
         ->setLinkTemplate(ScheduledTransitionsRouteProvider::LINK_TEMPLATE_ADD, $canonicalPath . ScheduledTransitionsRouteProvider::CANONICAL_PATH_SUFFIX_ADD);
+    }
+  }
+
+  /**
+   * Implements hook_entity_delete().
+   *
+   * @see \scheduled_transitions_entity_delete()
+   */
+  public function entityDelete(EntityInterface $entity): void {
+    foreach (ScheduledTransition::loadByHostEntity($entity) as $scheduledTransition) {
+      $scheduledTransition->delete();
     }
   }
 

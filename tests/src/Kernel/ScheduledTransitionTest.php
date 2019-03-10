@@ -292,6 +292,38 @@ class ScheduledTransitionTest extends KernelTestBase {
   }
 
   /**
+   * Test scheduled transitions are cleaned up when entities are deleted.
+   */
+  public function testScheduledTransitionEntityCleanUp() {
+    $workflow = $this->createEditorialWorkflow();
+    $workflow->getTypePlugin()->addEntityTypeAndBundle('entity_test_revlog', 'entity_test_revlog');
+    $workflow->save();
+
+    $entity = EntityTestWithRevisionLog::create([
+      'type' => 'entity_test_revlog',
+      'name' => 'foo',
+      'moderation_state' => 'draft'
+    ]);
+    $entity->save();
+
+    $scheduledTransition = ScheduledTransition::create([
+      'entity' => $entity,
+      'entity_revision_id' => $entity->getRevisionId(),
+      'author' => 1,
+      'workflow' => $workflow->id(),
+      'moderation_state' => 'published',
+      'transition_on' => (new \DateTime('2 Feb 2018 11am'))->getTimestamp(),
+      'options' => [
+        ['recreate_non_default_head' => TRUE],
+      ],
+    ]);
+    $scheduledTransition->save();
+
+    $entity->delete();
+    $this->assertNull(ScheduledTransition::load($scheduledTransition->id()));
+  }
+
+  /**
    * Checks and runs any ready transitions.
    *
    * @param \Drupal\scheduled_transitions\Entity\ScheduledTransitionInterface $scheduledTransition

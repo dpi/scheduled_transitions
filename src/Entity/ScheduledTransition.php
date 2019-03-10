@@ -201,6 +201,20 @@ class ScheduledTransition extends ContentEntityBase implements ScheduledTransiti
   }
 
   /**
+   * Load a list of scheduled transitions by host entity.
+   *
+   * @return \Drupal\scheduled_transitions\Entity\ScheduledTransitionInterface[]
+   *   A list of scheduled transitions for the given entity.
+   */
+  public static function loadByHostEntity(EntityInterface $entity) {
+    $query = \Drupal::entityQuery('scheduled_transition');
+    $query->condition('entity.target_id', $entity->id());
+    $query->condition('entity.target_type', $entity->getEntityTypeId());
+    $query->accessCheck(FALSE);
+    return static::loadMultiple($query->execute());
+  }
+
+  /**
    * {@inheritdoc}
    */
   protected function invalidateTagsOnSave($update) {

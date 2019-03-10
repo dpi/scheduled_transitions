@@ -46,6 +46,16 @@ function scheduled_transitions_entity_type_build(array &$entity_types) {
 }
 
 /**
+ * Implements hook_entity_delete().
+ *
+ * @see \Drupal\scheduled_transitions\ScheduledTransitionsEntityHooks::entityTypeBuild
+ */
+function scheduled_transitions_entity_delete(EntityInterface $entity) {
+  \Drupal::classResolver(ScheduledTransitionsEntityHooks::class)
+    ->entityDelete($entity);
+}
+
+/**
  * Implements hook_theme().
  */
 function scheduled_transitions_theme(array $existing, string $type, string $theme, string $path): array {
