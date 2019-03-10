@@ -83,7 +83,11 @@ class ScheduledTransitionRevisionLinkField extends LinkBase {
       ->getStorage($entity->getEntityTypeId())
       ->loadRevision($entityRevisionId);
 
-    return $entityRevision->toUrl('revision');
+    $toUrlArgs = [];
+    if ($entityRevision->hasLinkTemplate('revision')) {
+      $toUrlArgs[] = 'revision';
+    }
+    return $entityRevision->toUrl(...$toUrlArgs);
   }
 
   /**
@@ -101,9 +105,6 @@ class ScheduledTransitionRevisionLinkField extends LinkBase {
     if (!$entityRevision) {
       return '';
     }
-//    if (!$entity->getEntityType()->hasLinkTemplate('revision')) {
-//      return '';
-//    }
     $text = parent::renderLink($row);
     $this->options['alter']['query'] = $this->getDestinationArray();
     return $text;

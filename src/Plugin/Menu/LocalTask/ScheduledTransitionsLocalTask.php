@@ -125,10 +125,16 @@ class ScheduledTransitionsLocalTask extends LocalTaskDefault implements Containe
    */
   protected function getEntityFromRouteMatch(): ?ContentEntityInterface {
     [1 => $entityTypeId] = explode('.', $this->pluginDefinition['base_route']);
-    $entity = $this->routeMatch->getParameter($entityTypeId);
-    if ($entity instanceof ContentEntityInterface) {
-      return $entity;
+
+    // Get the first parameter in the route definition matching the entity type,
+    // since the upcasted entity parameter could be something like {entity}.
+    $parameters = $this->routeMatch->getParameters()->all();
+    foreach ($parameters as $parameter) {
+      if ($parameter instanceof ContentEntityInterface && $parameter->getEntityTypeId() === $entityTypeId) {
+        return $parameter;
+      }
     }
+
     return NULL;
   }
 

@@ -5,6 +5,7 @@ declare(strict_types = 1);
 namespace Drupal\scheduled_transitions\Form\Entity;
 
 use Drupal\Component\Datetime\TimeInterface;
+use Drupal\Component\Utility\Xss;
 use Drupal\content_moderation\ModerationInformationInterface;
 use Drupal\Core\Datetime\DateFormatterInterface;
 use Drupal\Core\Entity\ContentEntityForm;
@@ -335,7 +336,14 @@ class ScheduledTransitionAddForm extends ContentEntityForm {
         /** @var \Drupal\Core\Entity\EntityInterface|\Drupal\Core\Entity\RevisionableInterface $entityRevision */
         $option = [];
         $revisionTArgs = ['@revision_id' => $entityRevision->getRevisionId()];
-        $revisionLink = $entityRevision->toLink($this->t('#@revision_id', $revisionTArgs), 'revision');
+
+        // Dont add the arg to toLink in case this particular entity has
+        // overwritten the default value of the param.
+        $toLinkArgs = [$this->t('#@revision_id', $revisionTArgs)];
+        if ($entityRevision->hasLinkTemplate('revision')) {
+          $toLinkArgs[] = 'revision';
+        }
+        $revisionLink = $entityRevision->toLink(...$toLinkArgs);
         $revisionCell = $revisionLink->toRenderable();
         $revisionCell['#attributes'] = [
           'target' => '_blank',
@@ -349,8 +357,15 @@ class ScheduledTransitionAddForm extends ContentEntityForm {
             ->format($entityRevision->getRevisionCreationTime());
           $revisionUser = $entityRevision->getRevisionUser();
           $option['revision_author']['data'] = $revisionUser ? $revisionUser->toLink() : $this->t('- Missing user -');
-          $revisionLog = $entityRevision->getRevisionLogMessage();
-          $option['revision_log']['data'] = !empty($revisionLog) ? ['#plain_text' => $revisionLog] : $this->t('<em>- None -</em>');
+          if ($revisionLog = $entityRevision->getRevisionLogMessage()) {
+            $option['revision_log']['data'] = [
+              '#markup' => $revisionLog,
+              '#allowed_tags' => Xss::getHtmlTagList(),
+            ];
+          }
+          else {
+            $option['revision_log']['data'] = $this->t('<em>- None -</em>');
+          }
         }
 
         return $option;
