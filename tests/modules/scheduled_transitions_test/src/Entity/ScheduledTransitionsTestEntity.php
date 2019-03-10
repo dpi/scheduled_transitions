@@ -33,6 +33,9 @@ use Drupal\entity_test_revlog\Entity\EntityTestWithRevisionLog;
  *     "route_provider" = {
  *       "html" = "Drupal\Core\Entity\Routing\DefaultHtmlRouteProvider",
  *     },
+ *     "form" = {
+ *       "default" = "Drupal\Core\Entity\ContentEntityForm",
+ *     },
  *   },
  *   links = {
  *     "canonical" = "/st_entity_test/{st_entity_test}",

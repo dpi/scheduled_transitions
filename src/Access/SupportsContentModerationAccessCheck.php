@@ -6,12 +6,15 @@ namespace Drupal\scheduled_transitions\Access;
 
 use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Access\AccessResultInterface;
+use Drupal\Core\Cache\CacheableMetadata;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Routing\Access\AccessInterface;
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\content_moderation\ModerationInformationInterface;
 use Drupal\Core\Session\AccountInterface;
+use Drupal\scheduled_transitions\Form\ScheduledTransitionsSettingsForm as SettingsForm;
 use Drupal\scheduled_transitions\Routing\ScheduledTransitionsRouteProvider;
+use Drupal\scheduled_transitions\ScheduledTransitionsUtilityInterface;
 use Symfony\Component\Routing\Route;
 
 /**
@@ -34,13 +37,23 @@ class SupportsContentModerationAccessCheck implements AccessInterface {
   protected $moderationInformation;
 
   /**
+   * Utilities for Scheduled Transitions module.
+   *
+   * @var \Drupal\scheduled_transitions\ScheduledTransitionsUtilityInterface
+   */
+  protected $scheduledTransitionsUtility;
+
+  /**
    * Constructs a new SupportsContentModerationAccessCheck.
    *
    * @param \Drupal\content_moderation\ModerationInformationInterface $moderationInformation
    *   General service for moderation-related questions about Entity API.
+   * @param \Drupal\scheduled_transitions\ScheduledTransitionsUtilityInterface $scheduledTransitionsUtility
+   *   Utilities for Scheduled Transitions module.
    */
-  public function __construct(ModerationInformationInterface $moderationInformation) {
+  public function __construct(ModerationInformationInterface $moderationInformation, ScheduledTransitionsUtilityInterface $scheduledTransitionsUtility) {
     $this->moderationInformation = $moderationInformation;
+    $this->scheduledTransitionsUtility = $scheduledTransitionsUtility;
   }
 
   /**
@@ -56,10 +69,15 @@ class SupportsContentModerationAccessCheck implements AccessInterface {
 
     $entity = $route_match->getParameter($routeEntityTypeId);
     if ($entity instanceof ContentEntityInterface) {
-      if ($this->moderationInformation->isModeratedEntity($entity)) {
-        return AccessResult::allowed()->addCacheableDependency($entity);
+      $access = (new CacheableMetadata())
+        ->addCacheableDependency($entity)
+        ->addCacheTags([SettingsForm::SETTINGS_TAG]);
+      $enabledBundles = $this->scheduledTransitionsUtility->getBundles();
+      if (in_array($entity->bundle(), $enabledBundles[$entity->getEntityTypeId()] ?? [], TRUE) && $this->moderationInformation->isModeratedEntity($entity)) {
+        return AccessResult::allowed()->addCacheableDependency($access);
       }
-      return AccessResult::forbidden('Entity does not support content moderation.')->addCacheableDependency($entity);
+      return AccessResult::forbidden('Scheduled transitions not supported on this entity.')
+        ->addCacheableDependency($access);
     }
     return AccessResult::forbidden('No entity provided.');
   }

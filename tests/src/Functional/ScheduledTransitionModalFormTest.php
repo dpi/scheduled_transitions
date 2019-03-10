@@ -9,6 +9,7 @@ use Drupal\scheduled_transitions_test\Entity\ScheduledTransitionsTestEntity;
 use Drupal\scheduled_transitions_test\Entity\ScheduledTransitionsTestNoRevisionTemplateEntity;
 use Drupal\Tests\BrowserTestBase;
 use Drupal\Tests\content_moderation\Traits\ContentModerationTestTrait;
+use Drupal\Tests\scheduled_transitions\Traits\ScheduledTransitionTestTrait;
 
 /**
  * Tests the modal form.
@@ -18,6 +19,7 @@ use Drupal\Tests\content_moderation\Traits\ContentModerationTestTrait;
 class ScheduledTransitionModalFormTest extends BrowserTestBase {
 
   use ContentModerationTestTrait;
+  use ScheduledTransitionTestTrait;
 
   /**
    * {@inheritdoc}
@@ -37,6 +39,8 @@ class ScheduledTransitionModalFormTest extends BrowserTestBase {
    * Tests revision logs.
    */
   public function testRevisionLogHtml() {
+    $this->enabledBundles([['st_entity_test', 'st_entity_test']]);
+
     $workflow = $this->createEditorialWorkflow();
     $workflow->getTypePlugin()->addEntityTypeAndBundle('st_entity_test', 'st_entity_test');
     $workflow->save();
@@ -68,6 +72,8 @@ class ScheduledTransitionModalFormTest extends BrowserTestBase {
    * Test using an entity without a revision link template.
    */
   public function testNoRevisionLinkTemplate() {
+    $this->enabledBundles([['st_entity_test_norevtemplate', 'st_entity_test_norevtemplate']]);
+
     $workflow = $this->createEditorialWorkflow();
     $workflow->getTypePlugin()->addEntityTypeAndBundle('st_entity_test_norevtemplate', 'st_entity_test_norevtemplate');
     $workflow->save();

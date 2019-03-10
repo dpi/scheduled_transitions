@@ -89,7 +89,7 @@ class ScheduledTransitionsPermissions implements ContainerInjectionInterface {
   public function permissions(): array {
     $permissions = [];
 
-    $bundleInfo = $this->scheduledTransitionsUtility->getApplicableBundles();
+    $bundleInfo = $this->scheduledTransitionsUtility->getBundles();
     foreach ($bundleInfo as $entityTypeId => $bundles) {
       $entityBundleInfo = $this->bundleInfo->getBundleInfo($entityTypeId);
       foreach ($bundles as $bundleId) {
