@@ -118,9 +118,9 @@ class ScheduledTransitionsEntityHooks implements ContainerInjectionInterface {
    * @see \scheduled_transitions_entity_delete()
    */
   public function entityDelete(EntityInterface $entity): void {
-    foreach (ScheduledTransition::loadByHostEntity($entity) as $scheduledTransition) {
-      $scheduledTransition->delete();
-    }
+    $transitionStorage = $this->entityTypeManager->getStorage('scheduled_transition');
+    $transitionsForEntity = $this->loadByHostEntity($entity);
+    $transitionStorage->delete($transitionsForEntity);
   }
 
   /**
@@ -182,6 +182,22 @@ class ScheduledTransitionsEntityHooks implements ContainerInjectionInterface {
     $mirrorOperation = $this->configFactory->get('scheduled_transitions.settings')
       ->get('mirror_operations.' . $operation);
     return is_string($mirrorOperation) ? $mirrorOperation : NULL;
+  }
+
+  /**
+   * Load a list of scheduled transitions by host entity.
+   *
+   * @return \Drupal\scheduled_transitions\Entity\ScheduledTransitionInterface[]
+   *   A list of scheduled transitions for the given entity.
+   */
+  protected function loadByHostEntity(EntityInterface $entity): array {
+    $transitionStorage = $this->entityTypeManager->getStorage('scheduled_transition');
+    $ids = $transitionStorage->getQuery()
+      ->condition('entity.target_id', $entity->id())
+      ->condition('entity.target_type', $entity->getEntityTypeId())
+      ->accessCheck(FALSE)
+      ->execute();
+    return $transitionStorage->loadMultiple($ids);
   }
 
 }

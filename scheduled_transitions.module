@@ -62,7 +62,7 @@ function scheduled_transitions_entity_type_build(array &$entity_types) {
  *
  * @see \Drupal\scheduled_transitions\ScheduledTransitionsEntityHooks::entityTypeBuild
  */
-function scheduled_transitions_entity_delete(EntityInterface $entity) {
+function scheduled_transitions_entity_delete(EntityInterface $entity): void {
   \Drupal::classResolver(ScheduledTransitionsEntityHooks::class)
     ->entityDelete($entity);
 }
