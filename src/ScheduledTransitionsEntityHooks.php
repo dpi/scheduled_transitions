@@ -10,7 +10,6 @@ use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\Core\Entity\ContentEntityType;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
-use Drupal\scheduled_transitions\Entity\ScheduledTransition;
 use Drupal\scheduled_transitions\Form\Entity\ScheduledTransitionAddForm;
 use Drupal\scheduled_transitions\Form\ScheduledTransitionForm;
 use Drupal\scheduled_transitions\Form\ScheduledTransitionsSettingsForm as SettingsForm;
