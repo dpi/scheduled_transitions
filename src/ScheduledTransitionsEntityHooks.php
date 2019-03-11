@@ -8,7 +8,9 @@ use Drupal\content_moderation\ModerationInformationInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\Core\Entity\ContentEntityType;
+use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\scheduled_transitions\Entity\ScheduledTransition;
 use Drupal\scheduled_transitions\Form\Entity\ScheduledTransitionAddForm;
 use Drupal\scheduled_transitions\Form\ScheduledTransitionForm;
 use Drupal\scheduled_transitions\Form\ScheduledTransitionsSettingsForm as SettingsForm;
@@ -16,7 +18,6 @@ use Drupal\scheduled_transitions\Routing\ScheduledTransitionsRouteProvider;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Access\AccessResultInterface;
-use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\scheduled_transitions\ScheduledTransitionsPermissions as Permissions;
 
@@ -112,6 +113,17 @@ class ScheduledTransitionsEntityHooks implements ContainerInjectionInterface {
   }
 
   /**
+   * Implements hook_entity_delete().
+   *
+   * @see \scheduled_transitions_entity_delete()
+   */
+  public function entityDelete(EntityInterface $entity): void {
+    $transitionStorage = $this->entityTypeManager->getStorage('scheduled_transition');
+    $transitionsForEntity = $this->loadByHostEntity($entity);
+    $transitionStorage->delete($transitionsForEntity);
+  }
+
+  /**
    * Implements hook_entity_access().
    *
    * @see \scheduled_transitions_entity_access()
@@ -170,6 +182,22 @@ class ScheduledTransitionsEntityHooks implements ContainerInjectionInterface {
     $mirrorOperation = $this->configFactory->get('scheduled_transitions.settings')
       ->get('mirror_operations.' . $operation);
     return is_string($mirrorOperation) ? $mirrorOperation : NULL;
+  }
+
+  /**
+   * Load a list of scheduled transitions by host entity.
+   *
+   * @return \Drupal\scheduled_transitions\Entity\ScheduledTransitionInterface[]
+   *   A list of scheduled transitions for the given entity.
+   */
+  protected function loadByHostEntity(EntityInterface $entity): array {
+    $transitionStorage = $this->entityTypeManager->getStorage('scheduled_transition');
+    $ids = $transitionStorage->getQuery()
+      ->condition('entity.target_id', $entity->id())
+      ->condition('entity.target_type', $entity->getEntityTypeId())
+      ->accessCheck(FALSE)
+      ->execute();
+    return $transitionStorage->loadMultiple($ids);
   }
 
 }

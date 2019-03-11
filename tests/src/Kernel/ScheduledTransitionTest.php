@@ -322,6 +322,38 @@ class ScheduledTransitionTest extends KernelTestBase {
   }
 
   /**
+   * Test scheduled transitions are cleaned up when entities are deleted.
+   */
+  public function testScheduledTransitionEntityCleanUp() {
+    $workflow = $this->createEditorialWorkflow();
+    $workflow->getTypePlugin()->addEntityTypeAndBundle('entity_test_revlog', 'entity_test_revlog');
+    $workflow->save();
+
+    $entity = EntityTestWithRevisionLog::create([
+      'type' => 'entity_test_revlog',
+      'name' => 'foo',
+      'moderation_state' => 'draft'
+    ]);
+    $entity->save();
+
+    $scheduledTransition = ScheduledTransition::create([
+      'entity' => $entity,
+      'entity_revision_id' => $entity->getRevisionId(),
+      'author' => 1,
+      'workflow' => $workflow->id(),
+      'moderation_state' => 'published',
+      'transition_on' => (new \DateTime('2 Feb 2018 11am'))->getTimestamp(),
+      'options' => [
+        ['recreate_non_default_head' => TRUE],
+      ],
+    ]);
+    $scheduledTransition->save();
+
+    $entity->delete();
+    $this->assertNull(ScheduledTransition::load($scheduledTransition->id()));
+  }
+
+  /**
    * Test when a default or latest revision use a state that no longer exists.
    *
    * Log message displays appropriate info.
@@ -384,7 +416,7 @@ class ScheduledTransitionTest extends KernelTestBase {
     $workflow->getTypePlugin()->deleteState($testState2Name);
     $workflow->save();
 
-    $type= $workflow->getTypePlugin();
+    $type = $workflow->getTypePlugin();
 
     // Transitioning the first revision, will also recreate the pending revision
     // in this workflow because of the OPTION_RECREATE_NON_DEFAULT_HEAD option
