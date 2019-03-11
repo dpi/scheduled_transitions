@@ -184,6 +184,18 @@ class ScheduledTransitionsSettingsForm extends ConfigFormBase {
 
     $settings = $this->config('scheduled_transitions.settings');
 
+    $form['cron'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Automation'),
+      '#open' => TRUE,
+    ];
+    $form['cron']['cron_create_queue_items'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Create scheduling jobs in cron'),
+      '#description' => $this->t('If this setting is not enabled, items must be created using <code>drush scheduled-transitions:queue-jobs</code> command.'),
+      '#default_value' => (bool) $settings->get('automation.cron_create_queue_items'),
+    ];
+
     $form['entity_operations'] = [
       '#type' => 'details',
       '#title' => $this->t('Entity operations'),
@@ -248,6 +260,7 @@ class ScheduledTransitionsSettingsForm extends ConfigFormBase {
     $settings = $this->config('scheduled_transitions.settings')
       ->set('mirror_operations.view scheduled transition', $form_state->getValue('mirror_operation_view'))
       ->set('mirror_operations.add scheduled transition', $form_state->getValue('mirror_operation_add'))
+      ->set('automation.cron_create_queue_items', (bool) $form_state->getValue('cron_create_queue_items'))
       ->set('message_transition_latest', $form_state->getValue('message_transition_latest'))
       ->set('message_transition_historical', $form_state->getValue('message_transition_historical'))
       ->set('message_transition_copy_latest_draft', $form_state->getValue('message_transition_copy_latest_draft'));

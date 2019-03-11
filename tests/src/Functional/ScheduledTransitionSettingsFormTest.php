@@ -36,6 +36,26 @@ class ScheduledTransitionSettingsFormTest extends BrowserTestBase {
   ];
 
   /**
+   * Tests automation/cron settings.
+   */
+  public function testAutomation(): void {
+    $currentUser = $this->drupalCreateUser(['administer scheduled transitions']);
+    $this->drupalLogin($currentUser);
+    $url = Url::fromRoute('scheduled_transitions.settings');
+    $this->drupalGet($url);
+
+    $this->assertSession()->checkboxChecked('cron_create_queue_items');
+
+    $edit = [
+      'cron_create_queue_items' => FALSE,
+    ];
+    $this->drupalPostForm(NULL, $edit, 'Save configuration');
+
+    $this->assertSession()->pageTextContains('The configuration options have been saved.');
+    $this->assertSession()->checkboxNotChecked('cron_create_queue_items');
+  }
+
+  /**
    * Tests mirror operations settings.
    */
   public function testMirrorOperations(): void {

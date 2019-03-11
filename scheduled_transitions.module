@@ -14,6 +14,7 @@ use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Url;
 use Drupal\scheduled_transitions\Routing\ScheduledTransitionsRouteProvider;
 use Drupal\scheduled_transitions\ScheduledTransitionsEntityHooks;
+use Drupal\scheduled_transitions\ScheduledTransitionsHooks;
 
 /**
  * Implements hook_entity_access().
@@ -65,6 +66,15 @@ function scheduled_transitions_entity_type_build(array &$entity_types) {
 function scheduled_transitions_entity_delete(EntityInterface $entity): void {
   \Drupal::classResolver(ScheduledTransitionsEntityHooks::class)
     ->entityDelete($entity);
+}
+
+/**
+ * Implements hook_cron().
+ *
+ * @see \Drupal\scheduled_transitions\ScheduledTransitionsHooks::cron
+ */
+function scheduled_transitions_cron(): void {
+  \Drupal::classResolver(ScheduledTransitionsHooks::class)->cron();
 }
 
 /**
