@@ -183,7 +183,13 @@ class ScheduledTransitionsSettingsForm extends ConfigFormBase {
     $form['bundles']['enabled']['#default_value'] = array_fill_keys($enabledBundles, TRUE);
 
     $settings = $this->config('scheduled_transitions.settings');
-    $form['mirror_operation_view'] = [
+
+    $form['entity_operations'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Entity operations'),
+      '#open' => TRUE,
+    ];
+    $form['entity_operations']['mirror_operation_view'] = [
       '#type' => 'select',
       '#title' => 'Mirror view scheduled transitions',
       '#description' => $this->t('When attempting to <em>view scheduled transitions</em> for an entity, defer access to another operation.'),
@@ -194,7 +200,7 @@ class ScheduledTransitionsSettingsForm extends ConfigFormBase {
       '#empty_option' => $this->t('- Disabled -'),
       '#default_value' => $settings->get('mirror_operations.view scheduled transition'),
     ];
-    $form['mirror_operation_add'] = [
+    $form['entity_operations']['mirror_operation_add'] = [
       '#type' => 'select',
       '#title' => 'Mirror add scheduled transitions',
       '#description' => $this->t('When attempting to <em>add scheduled transitions</em> for an entity, defer access to another operation.'),
