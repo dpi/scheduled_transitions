@@ -1,4 +1,9 @@
-entity.scheduled_transitions_test.canonical:
-  route_name: entity.scheduled_transitions_test.canonical
-  base_route: entity.scheduled_transitions_test.canonical
+entity.st_entity_test.canonical:
+  route_name: entity.st_entity_test.canonical
+  base_route: entity.st_entity_test.canonical
   title: 'View'
+
+entity.st_entity_test.edit_form:
+  route_name: entity.st_entity_test.edit_form
+  base_route: entity.st_entity_test.canonical
+  title: 'Edit'

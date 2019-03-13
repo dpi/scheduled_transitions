@@ -6,7 +6,8 @@ namespace Drupal\scheduled_transitions\Routing;
 
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Entity\Routing\EntityRouteProviderInterface;
-use Drupal\scheduled_transitions\Access\SupportsContentModerationAccessCheck;
+use Drupal\scheduled_transitions\Access\SupportsContentModerationAccessCheck as AccessCheck;
+use Drupal\scheduled_transitions\ScheduledTransitionsPermissions as Permissions;
 use Symfony\Component\Routing\Route;
 use Symfony\Component\Routing\RouteCollection;
 
@@ -50,8 +51,8 @@ class ScheduledTransitionsRouteProvider implements EntityRouteProviderInterface 
           '_entity_form' => $entityTypeId . '.' . static::FORM,
         ])
         // @todo Better permissions
-        ->setRequirement('_entity_access', "{$entityTypeId}.update")
-        ->setRequirement(SupportsContentModerationAccessCheck::ACCESS_CHECK_ID, 'TRUE')
+        ->setRequirement('_entity_access', $entityTypeId . '.' . Permissions::ENTITY_OPERATION_VIEW_TRANSITIONS)
+        ->setRequirement(AccessCheck::ACCESS_CHECK_ID, 'TRUE')
         ->setOption('_admin_route', TRUE)
         ->setOption(static::ROUTE_ENTITY_TYPE, $entityTypeId)
         ->setOption('parameters', [
@@ -68,8 +69,8 @@ class ScheduledTransitionsRouteProvider implements EntityRouteProviderInterface 
           '_entity_form' => $entityTypeId . '.' . static::FORM_ADD,
         ])
         // @todo Better permissions
-        ->setRequirement('_entity_access', "{$entityTypeId}.update")
-        ->setRequirement(SupportsContentModerationAccessCheck::ACCESS_CHECK_ID, 'TRUE')
+        ->setRequirement('_entity_access', $entityTypeId . '.' . Permissions::ENTITY_OPERATION_ADD_TRANSITION)
+        ->setRequirement(AccessCheck::ACCESS_CHECK_ID, 'TRUE')
         ->setOption('_admin_route', TRUE)
         ->setOption(static::ROUTE_ENTITY_TYPE, $entityTypeId)
         ->setOption('parameters', [

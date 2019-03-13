@@ -123,7 +123,11 @@ class ScheduledTransitionForm extends ContentEntityForm {
         $entityRevision = $entityStorage->loadRevision($entityRevisionId);
         $revisionTArgs = ['@revision_id' => $entityRevisionId];
         if ($entityRevision) {
-          $row['from_revision'] = $entityRevision->toLink($this->t('#@revision_id', $revisionTArgs), 'revision');
+          $toLinkArgs = [$this->t('#@revision_id', $revisionTArgs)];
+          if ($entityRevision->hasLinkTemplate('revision')) {
+            $toLinkArgs[] = 'revision';
+          }
+          $row['from_revision'] = $entityRevision->toLink(...$toLinkArgs);
           $fromState = $workflowStates[$entityRevision->moderation_state->value] ?? NULL;
           $row['from_state'] = $fromState ? $fromState->label() : $this->t('- Missing from workflow/state -');
         }

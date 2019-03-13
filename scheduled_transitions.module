@@ -7,11 +7,24 @@
 
 declare(strict_types = 1);
 
+use Drupal\Core\Access\AccessResultInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Render\BubbleableMetadata;
+use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Url;
 use Drupal\scheduled_transitions\Routing\ScheduledTransitionsRouteProvider;
 use Drupal\scheduled_transitions\ScheduledTransitionsEntityHooks;
+use Drupal\scheduled_transitions\ScheduledTransitionsHooks;
+
+/**
+ * Implements hook_entity_access().
+ *
+ * @see \Drupal\scheduled_transitions\ScheduledTransitionsEntityHooks::entityAccess
+ */
+function scheduled_transitions_entity_access(EntityInterface $entity, $operation, AccountInterface $account): AccessResultInterface {
+  return \Drupal::classResolver(ScheduledTransitionsEntityHooks::class)
+    ->entityAccess($entity, $operation, $account);
+}
 
 /**
  * Implements hook_entity_operation().
@@ -43,6 +56,25 @@ function scheduled_transitions_entity_operation(EntityInterface $entity): array 
 function scheduled_transitions_entity_type_build(array &$entity_types) {
   \Drupal::classResolver(ScheduledTransitionsEntityHooks::class)
     ->entityTypeBuild($entity_types);
+}
+
+/**
+ * Implements hook_entity_delete().
+ *
+ * @see \Drupal\scheduled_transitions\ScheduledTransitionsEntityHooks::entityTypeBuild
+ */
+function scheduled_transitions_entity_delete(EntityInterface $entity): void {
+  \Drupal::classResolver(ScheduledTransitionsEntityHooks::class)
+    ->entityDelete($entity);
+}
+
+/**
+ * Implements hook_cron().
+ *
+ * @see \Drupal\scheduled_transitions\ScheduledTransitionsHooks::cron
+ */
+function scheduled_transitions_cron(): void {
+  \Drupal::classResolver(ScheduledTransitionsHooks::class)->cron();
 }
 
 /**

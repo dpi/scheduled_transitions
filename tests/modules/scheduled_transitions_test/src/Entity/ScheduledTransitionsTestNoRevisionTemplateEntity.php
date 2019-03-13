@@ -10,11 +10,11 @@ use Drupal\entity_test_revlog\Entity\EntityTestWithRevisionLog;
  * Defines the test entity class.
  *
  * @ContentEntityType(
- *   id = "st_entity_test",
- *   label = @Translation("ST test entity"),
- *   base_table = "st_entity_test",
- *   revision_table = "st_entity_test_revision",
- *   admin_permission = "administer st_entity_test entities",
+ *   id = "st_entity_test_norevtemplate",
+ *   label = @Translation("ST test entity (no revision template)"),
+ *   base_table = "st_entity_test_norevtemplate",
+ *   revision_table = "st_entity_test_norevtemplate_revision",
+ *   admin_permission = "administer st_entity_test_norevtemplate entities",
  *   entity_keys = {
  *     "id" = "id",
  *     "uuid" = "uuid",
@@ -33,16 +33,13 @@ use Drupal\entity_test_revlog\Entity\EntityTestWithRevisionLog;
  *     "route_provider" = {
  *       "html" = "Drupal\Core\Entity\Routing\DefaultHtmlRouteProvider",
  *     },
- *     "form" = {
- *       "default" = "Drupal\Core\Entity\ContentEntityForm",
- *     },
  *   },
  *   links = {
- *     "canonical" = "/st_entity_test/{st_entity_test}",
- *     "edit-form" = "/st_entity_test/{st_entity_test}/edit",
+ *     "canonical" = "/st_entity_test_norevtemplate/{st_entity_test_norevtemplate}",
+ *     "edit-form" = "/st_entity_test_norevtemplate/{st_entity_test_norevtemplate}/edit",
  *   }
  * )
  */
-class ScheduledTransitionsTestEntity extends EntityTestWithRevisionLog {
+class ScheduledTransitionsTestNoRevisionTemplateEntity extends EntityTestWithRevisionLog {
 
 }

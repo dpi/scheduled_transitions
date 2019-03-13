@@ -365,7 +365,14 @@ class ScheduledTransitionAddForm extends ContentEntityForm {
         /** @var \Drupal\Core\Entity\EntityInterface|\Drupal\Core\Entity\RevisionableInterface $entityRevision */
         $option = [];
         $revisionTArgs = ['@revision_id' => $entityRevision->getRevisionId()];
-        $revisionLink = $entityRevision->toLink($this->t('#@revision_id', $revisionTArgs), 'revision');
+
+        // Dont add the arg to toLink in case this particular entity has
+        // overwritten the default value of the param.
+        $toLinkArgs = [$this->t('#@revision_id', $revisionTArgs)];
+        if ($entityRevision->hasLinkTemplate('revision')) {
+          $toLinkArgs[] = 'revision';
+        }
+        $revisionLink = $entityRevision->toLink(...$toLinkArgs);
         $revisionCell = $revisionLink->toRenderable();
         $revisionCell['#attributes'] = [
           'target' => '_blank',

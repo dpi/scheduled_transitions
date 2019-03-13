@@ -4,6 +4,7 @@ declare(strict_types = 1);
 
 namespace Drupal\Tests\scheduled_transitions\Kernel;
 
+use Drupal\Core\DependencyInjection\ContainerBuilder;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\entity_test_revlog\Entity\EntityTestWithRevisionLog;
 use Drupal\KernelTests\KernelTestBase;
@@ -11,6 +12,7 @@ use Drupal\scheduled_transitions\Entity\ScheduledTransition;
 use Drupal\scheduled_transitions\Entity\ScheduledTransitionInterface;
 use Drupal\Tests\content_moderation\Traits\ContentModerationTestTrait;
 use Drupal\user\Entity\User;
+use Symfony\Component\Debug\BufferingLogger;
 
 /**
  * Tests basic functionality of scheduled_transitions fields.
@@ -34,6 +36,13 @@ class ScheduledTransitionTest extends KernelTestBase {
     'user',
     'system',
   ];
+
+  /**
+   * The service name of a logger.
+   *
+   * @var string
+   */
+  protected $testLoggerServiceName = 'test.logger';
 
   /**
    * {@inheritdoc}
@@ -93,6 +102,11 @@ class ScheduledTransitionTest extends KernelTestBase {
 
     $this->runTransition($scheduledTransition);
 
+    $logs = $this->getLogs();
+    $this->assertCount(2, $logs);
+    $this->assertEquals('Copied revision #2 and changed from Draft to Published', $logs[0]['message']);
+    $this->assertEquals('Deleted scheduled transition #1', $logs[1]['message']);
+
     $revisionIds = $this->getRevisionIds($entity);
     $this->assertCount(4, $revisionIds);
 
@@ -105,7 +119,7 @@ class ScheduledTransitionTest extends KernelTestBase {
   /**
    * Tests a scheduled revision.
    *
-   * Publish the lateset revision.
+   * Publish the latest revision.
    */
   public function testScheduledRevisionLatestNonDefault() {
     $workflow = $this->createEditorialWorkflow();
@@ -146,6 +160,11 @@ class ScheduledTransitionTest extends KernelTestBase {
     $scheduledTransition->save();
 
     $this->runTransition($scheduledTransition);
+
+    $logs = $this->getLogs();
+    $this->assertCount(2, $logs);
+    $this->assertEquals('Transitioning latest revision from Draft to Published', $logs[0]['message']);
+    $this->assertEquals('Deleted scheduled transition #1', $logs[1]['message']);
 
     $revisionIds = $this->getRevisionIds($entity);
     $this->assertCount(4, $revisionIds);
@@ -199,12 +218,18 @@ class ScheduledTransitionTest extends KernelTestBase {
       'moderation_state' => $newState,
       'transition_on' => (new \DateTime('2 Feb 2018 11am'))->getTimestamp(),
       'options' => [
-        ['recreate_non_default_head' => TRUE],
+        [ScheduledTransition::OPTION_RECREATE_NON_DEFAULT_HEAD => TRUE],
       ],
     ]);
     $scheduledTransition->save();
 
     $this->runTransition($scheduledTransition);
+
+    $logs = $this->getLogs();
+    $this->assertCount(3, $logs);
+    $this->assertEquals('Copied revision #2 and changed from Draft to Published', $logs[0]['message']);
+    $this->assertEquals('Reverted Draft revision #3 back to top', $logs[1]['message']);
+    $this->assertEquals('Deleted scheduled transition #1', $logs[2]['message']);
 
     $revisionIds = $this->getRevisionIds($entity);
     $this->assertCount(5, $revisionIds);
@@ -270,12 +295,17 @@ class ScheduledTransitionTest extends KernelTestBase {
       'moderation_state' => $newState,
       'transition_on' => (new \DateTime('2 Feb 2018 11am'))->getTimestamp(),
       'options' => [
-        ['recreate_non_default_head' => TRUE],
+        [ScheduledTransition::OPTION_RECREATE_NON_DEFAULT_HEAD => TRUE],
       ],
     ]);
     $scheduledTransition->save();
 
     $this->runTransition($scheduledTransition);
+
+    $logs = $this->getLogs();
+    $this->assertCount(2, $logs);
+    $this->assertEquals('Copied revision #2 and changed from Draft to Published', $logs[0]['message']);
+    $this->assertEquals('Deleted scheduled transition #1', $logs[1]['message']);
 
     $revisionIds = $this->getRevisionIds($entity);
     $this->assertCount(4, $revisionIds);
@@ -292,6 +322,122 @@ class ScheduledTransitionTest extends KernelTestBase {
   }
 
   /**
+   * Test scheduled transitions are cleaned up when entities are deleted.
+   */
+  public function testScheduledTransitionEntityCleanUp() {
+    $workflow = $this->createEditorialWorkflow();
+    $workflow->getTypePlugin()->addEntityTypeAndBundle('entity_test_revlog', 'entity_test_revlog');
+    $workflow->save();
+
+    $entity = EntityTestWithRevisionLog::create([
+      'type' => 'entity_test_revlog',
+      'name' => 'foo',
+      'moderation_state' => 'draft'
+    ]);
+    $entity->save();
+
+    $scheduledTransition = ScheduledTransition::create([
+      'entity' => $entity,
+      'entity_revision_id' => $entity->getRevisionId(),
+      'author' => 1,
+      'workflow' => $workflow->id(),
+      'moderation_state' => 'published',
+      'transition_on' => (new \DateTime('2 Feb 2018 11am'))->getTimestamp(),
+      'options' => [
+        ['recreate_non_default_head' => TRUE],
+      ],
+    ]);
+    $scheduledTransition->save();
+
+    $entity->delete();
+    $this->assertNull(ScheduledTransition::load($scheduledTransition->id()));
+  }
+
+  /**
+   * Test when a default or latest revision use a state that no longer exists.
+   *
+   * Log message displays appropriate info.
+   */
+  public function testLogsDeletedState() {
+    $testState1Name = 'foo_default_test_state1';
+    $testState2Name = 'foo_non_default_test_state2';
+    $testState3Name = 'published';
+    $workflow = $this->createEditorialWorkflow();
+    $workflow->getTypePlugin()->addEntityTypeAndBundle('entity_test_revlog', 'entity_test_revlog');
+    $configuration = $workflow->getTypePlugin()->getConfiguration();
+    $configuration['states'][$testState1Name] = [
+      'label' => 'Foo',
+      'published' => TRUE,
+      'default_revision' => TRUE,
+      'weight' => 0,
+    ];
+    $configuration['states'][$testState2Name] = [
+      'label' => 'Foo2',
+      'published' => TRUE,
+      'default_revision' => FALSE,
+      'weight' => 0,
+    ];
+    $workflow->getTypePlugin()->setConfiguration($configuration);
+    $workflow->save();
+
+    $author = User::create([
+      'uid' => 2,
+      'name' => $this->randomMachineName(),
+    ]);
+    $author->save();
+
+    $entity = EntityTestWithRevisionLog::create(['type' => 'entity_test_revlog']);
+    $entity->name = 'foobar1';
+    $entity->moderation_state = $testState1Name;
+    $entity->save();
+    $entityId = $entity->id();
+    $this->assertEquals(1, $entity->getRevisionId());
+
+    $entity->setNewRevision();
+    $entity->name = 'foobar3';
+    $entity->moderation_state = $testState2Name;
+    $entity->save();
+    $this->assertEquals(2, $entity->getRevisionId());
+
+    $scheduledTransition = ScheduledTransition::create([
+      'entity' => $entity,
+      'entity_revision_id' => 1,
+      'author' => $author,
+      'workflow' => $workflow->id(),
+      'moderation_state' => $testState3Name,
+      'transition_on' => (new \DateTime('2 Feb 2018 11am'))->getTimestamp(),
+      'options' => [
+        [ScheduledTransition::OPTION_RECREATE_NON_DEFAULT_HEAD => TRUE],
+      ],
+    ]);
+    $scheduledTransition->save();
+
+    $workflow->getTypePlugin()->deleteState($testState1Name);
+    $workflow->getTypePlugin()->deleteState($testState2Name);
+    $workflow->save();
+
+    $type = $workflow->getTypePlugin();
+
+    // Transitioning the first revision, will also recreate the pending revision
+    // in this workflow because of the OPTION_RECREATE_NON_DEFAULT_HEAD option
+    // above.
+    $this->runTransition($scheduledTransition);
+
+    $logBuffer = $this->getLogBuffer();
+    $logs = $this->getLogs($logBuffer);
+    $this->assertCount(2, $logs);
+    $this->assertEquals('Copied revision #1 and changed from - Unknown state - to Published', $logs[0]['message']);
+    $this->assertEquals('Deleted scheduled transition #1', $logs[1]['message']);
+
+    // Also check context of logs, to ensure missing states are present as
+    // 'Missing' strings.
+    [2 => $context] = $logBuffer[0];
+    $this->assertEqual('- Unknown state -', $context['@original_state']);
+    $this->assertEqual('- Unknown state -', $context['@original_latest_state']);
+    $this->assertEqual('Published', $context['@new_state']);
+  }
+
+  /**
    * Checks and runs any ready transitions.
    *
    * @param \Drupal\scheduled_transitions\Entity\ScheduledTransitionInterface $scheduledTransition
@@ -300,6 +446,40 @@ class ScheduledTransitionTest extends KernelTestBase {
   protected function runTransition(ScheduledTransitionInterface $scheduledTransition): void {
     $runner = $this->container->get('scheduled_transitions.runner');
     $runner->runTransition($scheduledTransition);
+  }
+
+  /**
+   * Gets logs from buffer and cleans out buffer.
+   *
+   * Reconstructs logs into plain strings.
+   *
+   * @param array|null $logBuffer
+   *   A log buffer from getLogBuffer, or provide an existing value fetched from
+   *   getLogBuffer. This is a workaround for the logger clearing values on
+   *   call.
+   *
+   * @return array
+   *   Logs from buffer, where values are an array with keys: severity, message.
+   */
+  protected function getLogs(?array $logBuffer = NULL): array {
+    $logs = array_map(function (array $log) {
+      [$severity, $message, $context] = $log;
+      return [
+        'severity' => $severity,
+        'message' => str_replace(array_keys($context), array_values($context), $message),
+      ];
+    }, $logBuffer ?? $this->getLogBuffer());
+    return array_values($logs);
+  }
+
+  /**
+   * Gets logs from buffer and cleans out buffer.
+   *
+   * @array
+   *   Logs from buffer, where values are an array with keys: severity, message.
+   */
+  protected function getLogBuffer(): array {
+    return $this->container->get($this->testLoggerServiceName)->cleanLogs();
   }
 
   /**
@@ -322,6 +502,16 @@ class ScheduledTransitionTest extends KernelTestBase {
       ->condition($entityDefinition->getKey('id'), $entity->id())
       ->execute();
     return array_keys($ids);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function register(ContainerBuilder $container) {
+    parent::register($container);
+    $container
+      ->register($this->testLoggerServiceName, BufferingLogger::class)
+      ->addTag('logger');
   }
 
 }

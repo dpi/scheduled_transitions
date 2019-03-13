@@ -146,6 +146,9 @@ class ScheduledTransitionsRunner implements ScheduledTransitionsRunnerInterface 
   /**
    * Transition a revision.
    *
+   * This method is responsible for saving new revision, and any intermediate
+   * revisions if applicable.
+   *
    * @param \Drupal\scheduled_transitions\Entity\ScheduledTransitionInterface $scheduledTransition
    *   A scheduled transition entity.
    * @param \Drupal\Core\Entity\EntityInterface $newRevision
@@ -172,10 +175,10 @@ class ScheduledTransitionsRunner implements ScheduledTransitionsRunnerInterface 
 
     $targs = [
       '@revision_id' => $entityRevisionId,
-      '@original_state' => $originalNewRevisionState->label(),
+      '@original_state' => $originalNewRevisionState ? $originalNewRevisionState->label() : $this->t('- Unknown state -'),
       '@new_state' => $newState->label(),
       '@original_revision_id' => $latest->getRevisionId(),
-      '@original_latest_state' => $originalLatestState->label(),
+      '@original_latest_state' => $originalLatestState ? $originalLatestState->label() : $this->t('- Unknown state -'),
     ];
 
     $tokenData = [
@@ -220,7 +223,9 @@ class ScheduledTransitionsRunner implements ScheduledTransitionsRunnerInterface 
       // If the new revision is now a default, and the old latest was not a
       // default (e.g Draft), then pull it back on top.
       if (!empty($options[ScheduledTransition::OPTION_RECREATE_NON_DEFAULT_HEAD])) {
-        if (!$isLatestRevisionPublished) {
+        // To republish, this revision cannot be published, and the state for
+        // this revision must still exist.
+        if (!$isLatestRevisionPublished && $originalLatestState) {
           $latest->setNewRevision();
           $this->logger->info('Reverted @original_latest_state revision #@original_revision_id back to top', $targs);
           if ($latest instanceof RevisionLogInterface) {

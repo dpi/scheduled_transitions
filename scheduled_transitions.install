@@ -25,9 +25,23 @@ function scheduled_transitions_update_8001(array &$sandbox): void {
 }
 
 /**
+ * Adds mirror to other operations config.
+ *
+ * @param array $sandbox
+ *   Sandbox.
+ */
+function scheduled_transitions_update_8002(array &$sandbox): void {
+  $configFactory = \Drupal::configFactory();
+  $configFactory->getEditable('scheduled_transitions.settings')
+    ->set('mirror_operations.view scheduled transition', 'update')
+    ->set('mirror_operations.add scheduled transition', 'update')
+    ->save(TRUE);
+}
+
+/**
  * Add the 'entity_revision_langcode' field to 'scheduled_transition' entities.
  */
-function scheduled_transitions_update_8002() {
+function scheduled_transitions_update_8003() {
   $storage_definition = BaseFieldDefinition::create('language')
     ->setLabel(\t('Content entity revision language'))
     ->setDescription(\t('The revision language of the entity this scheduled transition is for.'))
