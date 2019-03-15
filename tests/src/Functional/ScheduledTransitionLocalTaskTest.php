@@ -5,6 +5,7 @@ declare(strict_types = 1);
 namespace Drupal\Tests\scheduled_transitions\Functional;
 
 use Drupal\language\Entity\ConfigurableLanguage;
+use Drupal\language\Plugin\LanguageNegotiation\LanguageNegotiationUrl;
 use Drupal\scheduled_transitions\Entity\ScheduledTransition;
 use Drupal\scheduled_transitions_test\Entity\ScheduledTransitionsTestEntity as TestEntity;
 use Drupal\Tests\BrowserTestBase;
@@ -55,6 +56,14 @@ class ScheduledTransitionLocalTaskTest extends BrowserTestBase {
     ConfigurableLanguage::createFromLangcode('de')->save();
     ConfigurableLanguage::createFromLangcode('fr')->save();
 
+    $languageNegotiator = \Drupal::service('language_negotiator');
+    $languageNegotiator->saveConfiguration('language_content', [
+      LanguageNegotiationUrl::METHOD_ID => 1,
+    ]);
+    // Rebuild so container picks up new languages and enabled negotiator
+    // plugins.
+    $this->rebuildContainer();
+
     $workflow = $this->createEditorialWorkflow();
     $workflow->getTypePlugin()->addEntityTypeAndBundle('st_entity_test', 'st_entity_test');
     $workflow->save();
@@ -94,21 +103,17 @@ class ScheduledTransitionLocalTaskTest extends BrowserTestBase {
     // No translations for default language.
     $this->drupalGet($entity->toUrl());
     $this->assertSession()->statusCodeEquals(200);
-    $tabs = $this->assertSession()->elementExists('css', 'nav.tabs');
-    $this->assertCount(0, $tabs->findAll('named', ['link', 'Scheduled transitions (0)']));
+    $this->assertSession()->elementTextContains('css', 'nav.tabs', 'Scheduled transitions (0)');
 
     // No translations for 'de' language.
     $this->drupalGet($entity->getTranslation('de')->toUrl());
     $this->assertSession()->statusCodeEquals(200);
-    $tabs = $this->assertSession()->elementExists('css', 'nav.tabs');
-    $this->assertCount(1, $tabs->findAll('named', ['link', 'Scheduled transitions (1)']));
+    $this->assertSession()->elementTextContains('css', 'nav.tabs', 'Scheduled transitions (1)');
 
     // No translations for 'fr' language.
     $this->drupalGet($entity->getTranslation('fr')->toUrl());
     $this->assertSession()->statusCodeEquals(200);
-    $tabs = $this->assertSession()->elementExists('css', 'nav.tabs');
-    $this->assertCount(0, $tabs->findAll('named', ['link', 'Scheduled transitions (0)']));
-
+    $this->assertSession()->elementTextContains('css', 'nav.tabs', 'Scheduled transitions (0)');
   }
 
 }

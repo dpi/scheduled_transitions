@@ -56,8 +56,8 @@ class ScheduledTransitionEntityTransitionsFormTest extends BrowserTestBase {
     ConfigurableLanguage::createFromLangcode('de')->save();
     ConfigurableLanguage::createFromLangcode('fr')->save();
 
-    $language_negotiator = \Drupal::service('language_negotiator');
-    $language_negotiator->saveConfiguration('language_content', [
+    $languageNegotiator = \Drupal::service('language_negotiator');
+    $languageNegotiator->saveConfiguration('language_content', [
       LanguageNegotiationUrl::METHOD_ID => 1,
     ]);
     // Rebuild so container picks up new languages and enabled negotiator
@@ -106,16 +106,16 @@ class ScheduledTransitionEntityTransitionsFormTest extends BrowserTestBase {
     $this->assertSession()->pageTextContains('There are no scheduled transitions for defaultName');
 
     $deUrl = $entity->getTranslation('de')->toUrl(RouteProvider::LINK_TEMPLATE);
-    $this->assertEquals('/de/st_entity_test/1/scheduled-transitions', $deUrl->toString());
     $this->drupalGet($deUrl);
+    $this->assertSession()->addressEquals('/de/st_entity_test/1/scheduled-transitions');
     $this->assertSession()->pageTextNotContains('There are no scheduled transitions for deName');
     $this->assertSession()->elementTextContains('css', 'table tr:nth-child(1) > td:nth-child(2)', 'Draft');
     $this->assertSession()->elementTextContains('css', 'table tr:nth-child(1) > td:nth-child(3)', 'Published');
     $this->assertSession()->elementTextContains('css', 'table tr:nth-child(1) > td:nth-child(5)', $author->label());
 
     $frUrl = $entity->getTranslation('fr')->toUrl(RouteProvider::LINK_TEMPLATE);
-    $this->assertEquals('/fr/st_entity_test/1/scheduled-transitions', $frUrl->toString());
     $this->drupalGet($frUrl);
+    $this->assertSession()->addressEquals('/fr/st_entity_test/1/scheduled-transitions');
     $this->assertSession()->pageTextContains('There are no scheduled transitions for frName');
   }
 
