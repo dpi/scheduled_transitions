@@ -101,8 +101,8 @@ class ScheduledTransitionEntityTransitionsFormTest extends BrowserTestBase {
     $scheduledTransition->save();
 
     $defaultUrl = $entity->toUrl(RouteProvider::LINK_TEMPLATE);
-    $this->assertEquals('/st_entity_test/1/scheduled-transitions', $defaultUrl->toString());
     $this->drupalGet($defaultUrl);
+    $this->assertSession()->addressEquals('/st_entity_test/1/scheduled-transitions');
     $this->assertSession()->pageTextContains('There are no scheduled transitions for defaultName');
 
     $deUrl = $entity->getTranslation('de')->toUrl(RouteProvider::LINK_TEMPLATE);
