@@ -8,8 +8,11 @@ use Drupal\Core\DependencyInjection\ContainerBuilder;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\entity_test_revlog\Entity\EntityTestWithRevisionLog;
 use Drupal\KernelTests\KernelTestBase;
+use Drupal\language\Entity\ConfigurableLanguage;
 use Drupal\scheduled_transitions\Entity\ScheduledTransition;
 use Drupal\scheduled_transitions\Entity\ScheduledTransitionInterface;
+use Drupal\scheduled_transitions_test\Entity\ScheduledTransitionsTestEntity as TestEntity;
+use Drupal\scheduled_transitions_test\Entity\ScheduledTransitionsNonTranslatableTestEntity as NonTranslatableTestEntity;
 use Drupal\Tests\content_moderation\Traits\ContentModerationTestTrait;
 use Drupal\user\Entity\User;
 use Symfony\Component\Debug\BufferingLogger;
@@ -29,11 +32,13 @@ class ScheduledTransitionTest extends KernelTestBase {
   protected static $modules = [
     'entity_test_revlog',
     'entity_test',
+    'scheduled_transitions_test',
     'scheduled_transitions',
     'content_moderation',
     'workflows',
     'dynamic_entity_reference',
     'user',
+    'language',
     'system',
   ];
 
@@ -49,6 +54,8 @@ class ScheduledTransitionTest extends KernelTestBase {
    */
   protected function setUp() {
     parent::setUp();
+    $this->installEntitySchema('st_entity_test');
+    $this->installEntitySchema('st_nont_entity_test');
     $this->installEntitySchema('entity_test_revlog');
     $this->installEntitySchema('content_moderation_state');
     $this->installEntitySchema('user');
@@ -435,6 +442,63 @@ class ScheduledTransitionTest extends KernelTestBase {
     $this->assertEqual('- Unknown state -', $context['@original_state']);
     $this->assertEqual('- Unknown state -', $context['@original_latest_state']);
     $this->assertEqual('Published', $context['@new_state']);
+  }
+
+  public function testTranslationTransition(): void {
+    ConfigurableLanguage::createFromLangcode('de')->save();
+    ConfigurableLanguage::createFromLangcode('fr')->save();
+
+    $workflow = $this->createEditorialWorkflow();
+    $workflow->getTypePlugin()->addEntityTypeAndBundle('st_entity_test', 'st_entity_test');
+    $workflow->save();
+
+    /** @var \Drupal\scheduled_transitions_test\Entity\ScheduledTransitionsNonTranslatableTestEntity $entity */
+    $entity = TestEntity::create(['type' => 'st_entity_test']);
+    $de = $entity->addTranslation('de');
+    $fr = $entity->addTranslation('fr');
+    $de->name = 'deName';
+    $fr->name = 'frName';
+    $de->moderation_state = 'draft';
+    $fr->moderation_state = 'draft';
+    $entity->save();
+
+    $originalRevisionId = $entity->getRevisionId();
+    $originalDeRevisionId = $de->getRevisionId();
+    $originalFrRevisionId = $fr->getRevisionId();
+    $this->assertEquals(1, $entity->id());
+    $this->assertEquals(1, $entity->getRevisionId());
+    $this->assertEquals(1, $originalDeRevisionId);
+    $this->assertEquals(1, $originalDeRevisionId);
+
+    $author = User::create([
+      'uid' => 2,
+      'name' => $this->randomMachineName(),
+    ]);
+    $author->save();
+    $scheduledTransition = ScheduledTransition::create([
+      'entity' => $entity,
+      'entity_revision_id' => 1,
+      // Transition 'de'.
+      'entity_revision_langcode' => 'de',
+      'author' => $author,
+      'workflow' => $workflow->id(),
+      'moderation_state' => 'published',
+      'transition_on' => (new \DateTime('2 Feb 2018 11am'))->getTimestamp(),
+    ]);
+    $scheduledTransition->save();
+
+    $this->runTransition($scheduledTransition);
+
+    // Reload entity.
+    $entity = TestEntity::load($entity->id());
+    // Revision ID increments for all translations.
+    $this->assertEquals($originalRevisionId + 1, $entity->getRevisionId());
+    $this->assertEquals($originalFrRevisionId + 1, $entity->getTranslation('fr')->getRevisionId());
+    $this->assertEquals($originalDeRevisionId + 1, $entity->getTranslation('de')->getRevisionId());
+    $this->assertEquals('draft', $entity->moderation_state->value);
+    $this->assertEquals('draft', $entity->getTranslation('fr')->moderation_state->value);
+    // Only 'de' is published.
+    $this->assertEquals('published', $entity->getTranslation('de')->moderation_state->value);
   }
 
   /**

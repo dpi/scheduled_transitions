@@ -36,7 +36,7 @@ interface ScheduledTransitionInterface extends ContentEntityInterface {
    * @return string|null
    *   The revision language code.
    */
-  public function getEntityRevisionLanguage();
+  public function getEntityRevisionLanguage(): ?string;
 
   /**
    * Get the author for this scheduled transition.

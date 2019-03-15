@@ -11,6 +11,7 @@ use Drupal\Core\Menu\LocalTaskDefault;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
+use Drupal\Core\StringTranslation\TranslationInterface;
 use Drupal\scheduled_transitions\ScheduledTransitionsUtility;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -65,12 +66,15 @@ class ScheduledTransitionsLocalTask extends LocalTaskDefault implements Containe
    *   The entity type manager.
    * @param \Drupal\Core\Language\LanguageManagerInterface $languageManager
    *   The language manager.
+   * @param \Drupal\Core\StringTranslation\TranslationInterface $stringTranslation
+   *   The string translation service.
    */
-  public function __construct(array $configuration, $plugin_id, array $plugin_definition, RouteMatchInterface $routeMatch, EntityTypeManagerInterface $entityTypeManager, LanguageManagerInterface $languageManager) {
+  public function __construct(array $configuration, $plugin_id, array $plugin_definition, RouteMatchInterface $routeMatch, EntityTypeManagerInterface $entityTypeManager, LanguageManagerInterface $languageManager, TranslationInterface $stringTranslation) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->routeMatch = $routeMatch;
     $this->entityTypeManager = $entityTypeManager;
     $this->languageManager = $languageManager;
+    $this->stringTranslation = $stringTranslation;
   }
 
   /**
@@ -83,7 +87,8 @@ class ScheduledTransitionsLocalTask extends LocalTaskDefault implements Containe
       $plugin_definition,
       $container->get('current_route_match'),
       $container->get('entity_type.manager'),
-      $container->get('language_manager')
+      $container->get('language_manager'),
+      $container->get('string_translation')
     );
   }
 

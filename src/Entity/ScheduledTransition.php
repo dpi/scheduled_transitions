@@ -82,7 +82,7 @@ class ScheduledTransition extends ContentEntityBase implements ScheduledTransiti
     $fields['entity_revision_langcode'] = BaseFieldDefinition::create('language')
       ->setLabel(\t('Content entity revision language'))
       ->setDescription(\t('The revision language of the entity this scheduled transition is for.'))
-      ->setRequired(TRUE)
+      ->setRequired(FALSE)
       ->setCardinality(1);
 
     $fields['author'] = BaseFieldDefinition::create('entity_reference')
@@ -143,7 +143,7 @@ class ScheduledTransition extends ContentEntityBase implements ScheduledTransiti
   /**
    * {@inheritdoc}
    */
-  public function getEntityRevisionLanguage() {
+  public function getEntityRevisionLanguage(): ?string {
     return $this->get('entity_revision_langcode')->value;
   }
 
