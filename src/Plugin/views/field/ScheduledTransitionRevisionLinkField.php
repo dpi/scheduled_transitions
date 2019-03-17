@@ -7,6 +7,7 @@ namespace Drupal\scheduled_transitions\Plugin\views\field;
 use Drupal\Core\Access\AccessManagerInterface;
 use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Entity\TranslatableInterface;
 use Drupal\views\Plugin\views\field\LinkBase;
 use Drupal\views\ResultRow;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -82,6 +83,10 @@ class ScheduledTransitionRevisionLinkField extends LinkBase {
     $entityRevision = $this->entityTypeManager
       ->getStorage($entity->getEntityTypeId())
       ->loadRevision($entityRevisionId);
+    $language = $scheduledTransition->getEntityRevisionLanguage();
+    if ($language && $entityRevision instanceof TranslatableInterface && $entityRevision->hasTranslation($language)) {
+      $entityRevision = $entityRevision->getTranslation($language);
+    }
 
     $toUrlArgs = [];
     if ($entityRevision->hasLinkTemplate('revision')) {

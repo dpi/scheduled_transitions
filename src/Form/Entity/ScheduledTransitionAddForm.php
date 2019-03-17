@@ -13,7 +13,10 @@ use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityRepositoryInterface;
 use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
 use Drupal\Core\Entity\RevisionLogInterface;
+use Drupal\Core\Entity\TranslatableInterface;
+use Drupal\Core\Entity\TranslatableRevisionableInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\Core\Render\Element;
 use Drupal\Core\Render\Element\Tableselect;
 use Drupal\scheduled_transitions\Entity\ScheduledTransition;
@@ -40,6 +43,13 @@ class ScheduledTransitionAddForm extends ContentEntityForm {
   protected $moderationInformation;
 
   /**
+   * The language manager.
+   *
+   * @var \Drupal\Core\Language\LanguageManagerInterface
+   */
+  protected $languageManager;
+
+  /**
    * Constructs a new ScheduledTransitionAddForm.
    *
    * @param \Drupal\Core\Entity\EntityRepositoryInterface $entity_repository
@@ -52,11 +62,14 @@ class ScheduledTransitionAddForm extends ContentEntityForm {
    *   Various date related functionality.
    * @param \Drupal\content_moderation\ModerationInformationInterface $moderationInformation
    *   General service for moderation-related questions about Entity API.
+   * @param \Drupal\Core\Language\LanguageManagerInterface $languageManager
+   *   The language manager.
    */
-  public function __construct(EntityRepositoryInterface $entity_repository, EntityTypeBundleInfoInterface $entity_type_bundle_info, TimeInterface $time, DateFormatterInterface $dateFormatter, ModerationInformationInterface $moderationInformation) {
+  public function __construct(EntityRepositoryInterface $entity_repository, EntityTypeBundleInfoInterface $entity_type_bundle_info, TimeInterface $time, DateFormatterInterface $dateFormatter, ModerationInformationInterface $moderationInformation, LanguageManagerInterface $languageManager) {
     parent::__construct($entity_repository, $entity_type_bundle_info, $time);
     $this->dateFormatter = $dateFormatter;
     $this->moderationInformation = $moderationInformation;
+    $this->languageManager = $languageManager;
   }
 
   /**
@@ -68,7 +81,8 @@ class ScheduledTransitionAddForm extends ContentEntityForm {
       $container->get('entity_type.bundle.info'),
       $container->get('datetime.time'),
       $container->get('date.formatter'),
-      $container->get('content_moderation.moderation_information')
+      $container->get('content_moderation.moderation_information'),
+      $container->get('language_manager')
     );
   }
 
@@ -265,6 +279,7 @@ class ScheduledTransitionAddForm extends ContentEntityForm {
     $scheduledTransition = $scheduledTransitionStorage->create([
       'entity' => [$entity],
       'entity_revision_id' => $entityRevisionId,
+      'entity_revision_langcode' => $this->languageManager->getCurrentLanguage()->getId(),
       'author' => [$this->currentUser()->id()],
       'workflow' => $workflow->id(),
       'moderation_state' => $newState,
@@ -323,13 +338,27 @@ class ScheduledTransitionAddForm extends ContentEntityForm {
     $ids = $entityStorage->getQuery()
       ->allRevisions()
       ->condition($entityDefinition->getKey('id'), $entity->id())
+      ->condition($entityDefinition->getKey('langcode'), $this->languageManager->getCurrentLanguage()->getId())
       ->sort($entityDefinition->getKey('revision'), 'DESC')
       ->execute();
 
     $revisionIds = array_keys($ids);
     $entityRevisions = array_map(function (string $revisionId) use ($entityStorage): EntityInterface {
-      return $entityStorage->loadRevision($revisionId);
+      $revision = $entityStorage->loadRevision($revisionId);
+      // When the entity is translatable, load the translation for the current
+      // language.
+      if ($revision instanceof TranslatableInterface) {
+        $revision = $revision->getTranslation($this->languageManager->getCurrentLanguage()->getId());
+      }
+      return $revision;
     }, array_combine($revisionIds, $revisionIds));
+
+    // When the entity is translatable, every revision contains a copy for every
+    // translation. We only want to show the revisions that affected the
+    // translation for the current language.
+    $entityRevisions = array_filter($entityRevisions, function (EntityInterface $revision) {
+      return $revision instanceof TranslatableRevisionableInterface ? $revision->isRevisionTranslationAffected() : TRUE;
+    });
 
     return array_map(
       function (EntityInterface $entityRevision) use ($workflowStates): array {

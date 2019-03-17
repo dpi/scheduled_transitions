@@ -7,14 +7,16 @@ namespace Drupal\Tests\scheduled_transitions\Functional;
 use Drupal\scheduled_transitions\Routing\ScheduledTransitionsRouteProvider;
 use Drupal\scheduled_transitions_test\Entity\ScheduledTransitionsTestEntity;
 use Drupal\scheduled_transitions_test\Entity\ScheduledTransitionsTestNoRevisionTemplateEntity;
+use Drupal\scheduled_transitions\ScheduledTransitionsPermissions as Permissions;
 use Drupal\Tests\BrowserTestBase;
 use Drupal\Tests\content_moderation\Traits\ContentModerationTestTrait;
 use Drupal\Tests\scheduled_transitions\Traits\ScheduledTransitionTestTrait;
 
 /**
- * Tests the modal form.
+ * Tests the route to add a new transition to an entity (modal form).
  *
  * @group scheduled_transitions
+ * @coversDefaultClass \Drupal\scheduled_transitions\Form\Entity\ScheduledTransitionAddForm
  */
 class ScheduledTransitionModalFormTest extends BrowserTestBase {
 
@@ -50,7 +52,7 @@ class ScheduledTransitionModalFormTest extends BrowserTestBase {
       'use editorial transition create_new_draft',
       'use editorial transition publish',
       'use editorial transition archive',
-      'add scheduled transitions st_entity_test st_entity_test',
+      Permissions::addScheduledTransitionsPermission('st_entity_test', 'st_entity_test'),
     ]);
     $this->drupalLogin($currentUser);
 

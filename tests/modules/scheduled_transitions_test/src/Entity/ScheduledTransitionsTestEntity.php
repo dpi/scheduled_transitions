@@ -4,6 +4,8 @@ declare(strict_types = 1);
 
 namespace Drupal\scheduled_transitions_test\Entity;
 
+use Drupal\Core\Entity\EntityTypeInterface;
+use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\entity_test_revlog\Entity\EntityTestWithRevisionLog;
 
 /**
@@ -13,7 +15,9 @@ use Drupal\entity_test_revlog\Entity\EntityTestWithRevisionLog;
  *   id = "st_entity_test",
  *   label = @Translation("ST test entity"),
  *   base_table = "st_entity_test",
+ *   data_table = "st_entity_test_field_data",
  *   revision_table = "st_entity_test_revision",
+ *   revision_data_table = "st_entity_test_field_revision",
  *   admin_permission = "administer st_entity_test entities",
  *   entity_keys = {
  *     "id" = "id",
@@ -22,6 +26,7 @@ use Drupal\entity_test_revlog\Entity\EntityTestWithRevisionLog;
  *     "bundle" = "type",
  *     "label" = "name",
  *     "langcode" = "langcode",
+ *     "revision_translation_affected" = "revision_translation_affected",
  *   },
  *   revision_metadata_keys = {
  *     "revision_user" = "revision_user",
@@ -40,9 +45,26 @@ use Drupal\entity_test_revlog\Entity\EntityTestWithRevisionLog;
  *   links = {
  *     "canonical" = "/st_entity_test/{st_entity_test}",
  *     "edit-form" = "/st_entity_test/{st_entity_test}/edit",
- *   }
+ *   },
+ *   translatable = TRUE,
  * )
  */
 class ScheduledTransitionsTestEntity extends EntityTestWithRevisionLog {
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function baseFieldDefinitions(EntityTypeInterface $entity_type) {
+    $fields = parent::baseFieldDefinitions($entity_type);
+
+    $fields['revision_translation_affected'] = BaseFieldDefinition::create('boolean')
+      ->setLabel(t('Revision translation affected'))
+      ->setDescription(t('Indicates if the last edit of a translation belongs to current revision.'))
+      ->setReadOnly(TRUE)
+      ->setRevisionable(TRUE)
+      ->setTranslatable(TRUE);
+
+    return $fields;
+  }
 
 }
