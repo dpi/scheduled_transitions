@@ -16,7 +16,7 @@ use Drupal\scheduled_transitions\ScheduledTransitionsPermissions as Permissions;
 use Drupal\user\Entity\User;
 
 /**
- * Tests the route to showing all transitions for an entity.
+ * Tests the route which shows all transitions for an entity.
  *
  * @group scheduled_transitions
  * @coversDefaultClass \Drupal\scheduled_transitions\Form\ScheduledTransitionForm

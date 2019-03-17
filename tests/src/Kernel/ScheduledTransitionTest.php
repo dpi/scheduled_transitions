@@ -12,7 +12,6 @@ use Drupal\language\Entity\ConfigurableLanguage;
 use Drupal\scheduled_transitions\Entity\ScheduledTransition;
 use Drupal\scheduled_transitions\Entity\ScheduledTransitionInterface;
 use Drupal\scheduled_transitions_test\Entity\ScheduledTransitionsTestEntity as TestEntity;
-use Drupal\scheduled_transitions_test\Entity\ScheduledTransitionsNonTranslatableTestEntity as NonTranslatableTestEntity;
 use Drupal\Tests\content_moderation\Traits\ContentModerationTestTrait;
 use Drupal\user\Entity\User;
 use Symfony\Component\Debug\BufferingLogger;
@@ -339,7 +338,7 @@ class ScheduledTransitionTest extends KernelTestBase {
     $entity = EntityTestWithRevisionLog::create([
       'type' => 'entity_test_revlog',
       'name' => 'foo',
-      'moderation_state' => 'draft'
+      'moderation_state' => 'draft',
     ]);
     $entity->save();
 
@@ -444,6 +443,11 @@ class ScheduledTransitionTest extends KernelTestBase {
     $this->assertEqual('Published', $context['@new_state']);
   }
 
+  /**
+   * Tests the moderation state for a specific translation is changed.
+   *
+   * Other translations remain unaffected.
+   */
   public function testTranslationTransition(): void {
     ConfigurableLanguage::createFromLangcode('de')->save();
     ConfigurableLanguage::createFromLangcode('fr')->save();
@@ -452,7 +456,6 @@ class ScheduledTransitionTest extends KernelTestBase {
     $workflow->getTypePlugin()->addEntityTypeAndBundle('st_entity_test', 'st_entity_test');
     $workflow->save();
 
-    /** @var \Drupal\scheduled_transitions_test\Entity\ScheduledTransitionsNonTranslatableTestEntity $entity */
     $entity = TestEntity::create(['type' => 'st_entity_test']);
     $de = $entity->addTranslation('de');
     $fr = $entity->addTranslation('fr');

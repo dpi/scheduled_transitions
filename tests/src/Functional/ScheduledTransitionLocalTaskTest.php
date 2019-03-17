@@ -100,17 +100,17 @@ class ScheduledTransitionLocalTaskTest extends BrowserTestBase {
     ]);
     $this->drupalLogin($currentUser);
 
-    // No translations for default language.
+    // No transitions for default language.
     $this->drupalGet($entity->toUrl());
     $this->assertSession()->statusCodeEquals(200);
     $this->assertSession()->elementTextContains('css', 'nav.tabs', 'Scheduled transitions (0)');
 
-    // No translations for 'de' language.
+    // No transitions for 'de' language.
     $this->drupalGet($entity->getTranslation('de')->toUrl());
     $this->assertSession()->statusCodeEquals(200);
     $this->assertSession()->elementTextContains('css', 'nav.tabs', 'Scheduled transitions (1)');
 
-    // No translations for 'fr' language.
+    // No transitions for 'fr' language.
     $this->drupalGet($entity->getTranslation('fr')->toUrl());
     $this->assertSession()->statusCodeEquals(200);
     $this->assertSession()->elementTextContains('css', 'nav.tabs', 'Scheduled transitions (0)');
