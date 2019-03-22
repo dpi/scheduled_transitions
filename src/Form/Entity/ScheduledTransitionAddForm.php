@@ -16,6 +16,7 @@ use Drupal\Core\Entity\RevisionLogInterface;
 use Drupal\Core\Entity\TranslatableInterface;
 use Drupal\Core\Entity\TranslatableRevisionableInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Language\LanguageInterface;
 use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\Core\Render\Element;
 use Drupal\Core\Render\Element\Tableselect;
@@ -279,7 +280,7 @@ class ScheduledTransitionAddForm extends ContentEntityForm {
     $scheduledTransition = $scheduledTransitionStorage->create([
       'entity' => [$entity],
       'entity_revision_id' => $entityRevisionId,
-      'entity_revision_langcode' => $this->languageManager->getCurrentLanguage()->getId(),
+      'entity_revision_langcode' => $this->languageManager->getCurrentLanguage(LanguageInterface::TYPE_CONTENT)->getId(),
       'author' => [$this->currentUser()->id()],
       'workflow' => $workflow->id(),
       'moderation_state' => $newState,
@@ -338,7 +339,7 @@ class ScheduledTransitionAddForm extends ContentEntityForm {
     $ids = $entityStorage->getQuery()
       ->allRevisions()
       ->condition($entityDefinition->getKey('id'), $entity->id())
-      ->condition($entityDefinition->getKey('langcode'), $this->languageManager->getCurrentLanguage()->getId())
+      ->condition($entityDefinition->getKey('langcode'), $this->languageManager->getCurrentLanguage(LanguageInterface::TYPE_CONTENT)->getId())
       ->sort($entityDefinition->getKey('revision'), 'DESC')
       ->execute();
 
@@ -348,7 +349,7 @@ class ScheduledTransitionAddForm extends ContentEntityForm {
       // When the entity is translatable, load the translation for the current
       // language.
       if ($revision instanceof TranslatableInterface) {
-        $revision = $revision->getTranslation($this->languageManager->getCurrentLanguage()->getId());
+        $revision = $revision->getTranslation($this->languageManager->getCurrentLanguage(LanguageInterface::TYPE_CONTENT)->getId());
       }
       return $revision;
     }, array_combine($revisionIds, $revisionIds));

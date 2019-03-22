@@ -10,6 +10,7 @@ use Drupal\Core\Entity\ContentEntityForm;
 use Drupal\Core\Entity\EntityRepositoryInterface;
 use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Language\LanguageInterface;
 use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\scheduled_transitions\Entity\ScheduledTransitionInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -107,7 +108,7 @@ class ScheduledTransitionForm extends ContentEntityForm {
     $ids = $transitionStorage->getQuery()
       ->condition('entity__target_type', $entityTypeId)
       ->condition('entity__target_id', $entity->id())
-      ->condition('entity_revision_langcode', $this->languageManager->getCurrentLanguage()->getId())
+      ->condition('entity_revision_langcode', $this->languageManager->getCurrentLanguage(LanguageInterface::TYPE_CONTENT)->getId())
       ->tableSort($tableHeadings)
       ->execute();
 
