@@ -188,7 +188,7 @@ class ScheduledTransitionAddForm extends ContentEntityForm {
     }
 
     /** @var \Drupal\content_moderation\ContentModerationState|null $to */
-    $to = isset($input['state']) ? $workflowPlugin->getState($input['state']) : NULL;
+    $to = !empty($input['state']) ? $workflowPlugin->getState($input['state']) : NULL;
     $form['to_options'] = [
       '#type' => 'container',
       '#prefix' => '<div id="' . $toOptionsWrapperId . '">',
