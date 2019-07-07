@@ -123,6 +123,17 @@ class ScheduledTransitionsEntityHooks implements ContainerInjectionInterface {
   }
 
   /**
+   * Implements hook_entity_revision_delete().
+   *
+   * @see \scheduled_transitions_entity_revision_delete()
+   */
+  public function entityRevisionDelete(EntityInterface $entity): void {
+    $transitionStorage = $this->entityTypeManager->getStorage('scheduled_transition');
+    $transitionsForEntity = $this->loadByHostEntity($entity, TRUE);
+    $transitionStorage->delete($transitionsForEntity);
+  }
+
+  /**
    * Implements hook_entity_access().
    *
    * @see \scheduled_transitions_entity_access()
@@ -186,16 +197,24 @@ class ScheduledTransitionsEntityHooks implements ContainerInjectionInterface {
   /**
    * Load a list of scheduled transitions by host entity.
    *
+   * @param \Drupal\Core\Entity\EntityInterface $entity
+   *   Entity.
+   * @param bool $revision_match
+   *   TRUE to match revision too.
+   *
    * @return \Drupal\scheduled_transitions\Entity\ScheduledTransitionInterface[]
    *   A list of scheduled transitions for the given entity.
    */
-  protected function loadByHostEntity(EntityInterface $entity): array {
+  protected function loadByHostEntity(EntityInterface $entity, bool $revision_match = FALSE): array {
     $transitionStorage = $this->entityTypeManager->getStorage('scheduled_transition');
-    $ids = $transitionStorage->getQuery()
+    $query = $transitionStorage->getQuery()
       ->condition('entity.target_id', $entity->id())
       ->condition('entity.target_type', $entity->getEntityTypeId())
-      ->accessCheck(FALSE)
-      ->execute();
+      ->accessCheck(FALSE);
+    if ($revision_match) {
+      $query->condition('entity_revision_id', $entity->getRevisionId());
+    }
+    $ids = $query->execute();
     return $transitionStorage->loadMultiple($ids);
   }
 

@@ -65,7 +65,7 @@ class ScheduledTransitionRevisionLinkField extends LinkBase {
     /** @var \Drupal\scheduled_transitions\Entity\ScheduledTransitionInterface $scheduledTransition */
     $scheduledTransition = $this->getEntity($row);
     $entity = $scheduledTransition->getEntity();
-    if (!$entity->getEntityType()->hasLinkTemplate('revision')) {
+    if (!$entity || !$entity->getEntityType()->hasLinkTemplate('revision')) {
       return AccessResult::neutral('Entity does not have a revision/canonical template.');
     }
     return parent::checkUrlAccess($row);
@@ -103,6 +103,9 @@ class ScheduledTransitionRevisionLinkField extends LinkBase {
     $scheduledTransition = $this->getEntity($row);
 
     $entity = $scheduledTransition->getEntity();
+    if (!$entity) {
+      return '';
+    }
     $entityRevisionId = $scheduledTransition->getEntityRevisionId();
     $entityRevision = $this->entityTypeManager
       ->getStorage($entity->getEntityTypeId())

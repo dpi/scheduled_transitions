@@ -69,6 +69,16 @@ function scheduled_transitions_entity_delete(EntityInterface $entity): void {
 }
 
 /**
+ * Implements hook_entity_revision_delete().
+ *
+ * @see \Drupal\scheduled_transitions\ScheduledTransitionsEntityHooks::entityTypeBuild
+ */
+function scheduled_transitions_entity_revision_delete(EntityInterface $entity): void {
+  \Drupal::classResolver(ScheduledTransitionsEntityHooks::class)
+    ->entityRevisionDelete($entity);
+}
+
+/**
  * Implements hook_cron().
  *
  * @see \Drupal\scheduled_transitions\ScheduledTransitionsHooks::cron

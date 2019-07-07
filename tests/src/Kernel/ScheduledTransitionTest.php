@@ -360,6 +360,43 @@ class ScheduledTransitionTest extends KernelTestBase {
   }
 
   /**
+   * Test scheduled transitions are cleaned up when revisions are deleted.
+   */
+  public function testScheduledTransitionEntityRevisionCleanUp() {
+    $workflow = $this->createEditorialWorkflow();
+    $workflow->getTypePlugin()->addEntityTypeAndBundle('entity_test_revlog', 'entity_test_revlog');
+    $workflow->save();
+
+    $entity = EntityTestWithRevisionLog::create([
+      'type' => 'entity_test_revlog',
+      'name' => 'foo',
+      'moderation_state' => 'draft',
+    ]);
+    $entity->save();
+
+    $scheduledTransition = ScheduledTransition::create([
+      'entity' => $entity,
+      'entity_revision_id' => $entity->getRevisionId(),
+      'author' => 1,
+      'workflow' => $workflow->id(),
+      'moderation_state' => 'published',
+      'transition_on' => (new \DateTime('2 Feb 2018 11am'))->getTimestamp(),
+      'options' => [
+        ['recreate_non_default_head' => TRUE],
+      ],
+    ]);
+    $scheduledTransition->save();
+
+    /** @var \Drupal\Core\Entity\ContentEntityStorageInterface $storage */
+    $storage = \Drupal::entityTypeManager()->getStorage('entity_test_revlog');
+    $new_revision = $storage->createRevision($entity);
+    $new_revision->save();
+
+    $storage->deleteRevision($entity->getRevisionId());
+    $this->assertNull(ScheduledTransition::load($scheduledTransition->id()));
+  }
+
+  /**
    * Test when a default or latest revision use a state that no longer exists.
    *
    * Log message displays appropriate info.
