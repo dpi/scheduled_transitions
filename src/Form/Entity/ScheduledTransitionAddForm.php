@@ -7,6 +7,7 @@ namespace Drupal\scheduled_transitions\Form\Entity;
 use Drupal\Component\Datetime\TimeInterface;
 use Drupal\Component\Utility\Xss;
 use Drupal\content_moderation\ModerationInformationInterface;
+use Drupal\content_moderation\StateTransitionValidationInterface;
 use Drupal\Core\Datetime\DateFormatterInterface;
 use Drupal\Core\Entity\ContentEntityForm;
 use Drupal\Core\Entity\EntityInterface;
@@ -21,7 +22,6 @@ use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\Core\Render\Element;
 use Drupal\Core\Render\Element\Tableselect;
 use Drupal\scheduled_transitions\Entity\ScheduledTransition;
-use Drupal\workflows\TransitionInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -44,6 +44,13 @@ class ScheduledTransitionAddForm extends ContentEntityForm {
   protected $moderationInformation;
 
   /**
+   * Validates whether a certain state transition is allowed.
+   *
+   * @var \Drupal\content_moderation\StateTransitionValidationInterface
+   */
+  protected $stateTransitionValidation;
+
+  /**
    * The language manager.
    *
    * @var \Drupal\Core\Language\LanguageManagerInterface
@@ -63,13 +70,16 @@ class ScheduledTransitionAddForm extends ContentEntityForm {
    *   Various date related functionality.
    * @param \Drupal\content_moderation\ModerationInformationInterface $moderationInformation
    *   General service for moderation-related questions about Entity API.
+   * @param \Drupal\content_moderation\StateTransitionValidationInterface $stateTransitionValidation
+   *   Validates whether a certain state transition is allowed.
    * @param \Drupal\Core\Language\LanguageManagerInterface $languageManager
    *   The language manager.
    */
-  public function __construct(EntityRepositoryInterface $entity_repository, EntityTypeBundleInfoInterface $entity_type_bundle_info, TimeInterface $time, DateFormatterInterface $dateFormatter, ModerationInformationInterface $moderationInformation, LanguageManagerInterface $languageManager) {
+  public function __construct(EntityRepositoryInterface $entity_repository, EntityTypeBundleInfoInterface $entity_type_bundle_info, TimeInterface $time, DateFormatterInterface $dateFormatter, ModerationInformationInterface $moderationInformation, StateTransitionValidationInterface $stateTransitionValidation, LanguageManagerInterface $languageManager) {
     parent::__construct($entity_repository, $entity_type_bundle_info, $time);
     $this->dateFormatter = $dateFormatter;
     $this->moderationInformation = $moderationInformation;
+    $this->stateTransitionValidation = $stateTransitionValidation;
     $this->languageManager = $languageManager;
   }
 
@@ -83,6 +93,7 @@ class ScheduledTransitionAddForm extends ContentEntityForm {
       $container->get('datetime.time'),
       $container->get('date.formatter'),
       $container->get('content_moderation.moderation_information'),
+      $container->get('content_moderation.state_transition_validation'),
       $container->get('language_manager')
     );
   }
@@ -151,12 +162,9 @@ class ScheduledTransitionAddForm extends ContentEntityForm {
     $revision = $input['revision'] ?? 0;
     if ($revision > 0) {
       $entityStorage = $this->entityTypeManager->getStorage($entity->getEntityTypeId());
-
       $entityRevision = $entityStorage->loadRevision($revision);
-      $state = $entityRevision->moderation_state->value;
-
-      /** @var \Drupal\workflows\TransitionInterface[] $toTransitions */
-      $toTransitions = $workflowPlugin->getTransitionsForState($state, TransitionInterface::DIRECTION_FROM);
+      $toTransitions = $this->stateTransitionValidation
+        ->getValidTransitions($entityRevision, $this->currentUser());
       foreach ($toTransitions as $toTransition) {
         $stateOptions[$toTransition->to()->id()] = $toTransition->label();
       }
