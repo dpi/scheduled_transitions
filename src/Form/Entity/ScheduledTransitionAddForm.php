@@ -125,7 +125,7 @@ class ScheduledTransitionAddForm extends ContentEntityForm {
     $newMetaWrapperId = 'new-meta-wrapper';
     $toOptionsWrapperId = 'to-options-wrapper';
 
-    $form['revision'] = [
+    $form['revisions'] = [
       '#type' => 'tableselect',
       '#header' => $header,
       '#caption' => $this->t('Select which revision you wish to move to a new state.'),
@@ -159,7 +159,7 @@ class ScheduledTransitionAddForm extends ContentEntityForm {
     // Populate options with nothing.
     $stateOptions = [];
     $input = $form_state->getUserInput();
-    $revision = $input['revision'] ?? 0;
+    $revision = $input['revisions'] ?? 0;
     if ($revision > 0) {
       $entityStorage = $this->entityTypeManager->getStorage($entity->getEntityTypeId());
       $entityRevision = $entityStorage->loadRevision($revision);
@@ -262,8 +262,8 @@ class ScheduledTransitionAddForm extends ContentEntityForm {
    * {@inheritdoc}
    */
   public function validateForm(array &$form, FormStateInterface $form_state): void {
-    if (empty($form_state->getValue('revision'))) {
-      $form_state->setError($form['revision'], $this->t('Revision must be selected.'));
+    if (empty($form_state->getValue('revisions'))) {
+      $form_state->setError($form['revisions'], $this->t('Revision must be selected.'));
     }
   }
 
@@ -272,7 +272,7 @@ class ScheduledTransitionAddForm extends ContentEntityForm {
    */
   public function submitForm(array &$form, FormStateInterface $form_state): void {
     $entity = $this->getEntity();
-    $entityRevisionId = $form_state->getValue('revision');
+    $entityRevisionId = $form_state->getValue('revisions');
     $workflow = $this->moderationInformation->getWorkflowForEntity($entity);
     $newState = $form_state->getValue(['state']);
     /** @var \Drupal\Core\Datetime\DrupalDateTime $onDate */
