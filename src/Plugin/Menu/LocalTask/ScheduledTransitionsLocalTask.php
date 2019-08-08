@@ -106,7 +106,8 @@ class ScheduledTransitionsLocalTask extends LocalTaskDefault implements Containe
         ->condition('entity_revision_langcode', $this->languageManager->getCurrentLanguage(LanguageInterface::TYPE_CONTENT)->getId())
         ->count()
         ->execute();
-      return $this->t('Scheduled transitions (@count)', [
+      return $this->t('@title (@count)', [
+        '@title' => parent::getTitle($request),
         '@count' => $count,
       ]);
     }
