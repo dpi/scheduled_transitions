@@ -541,6 +541,60 @@ class ScheduledTransitionTest extends KernelTestBase {
   }
 
   /**
+   * Tests no pending revisions after transition on revision w/no field changes.
+   *
+   * After creating a revision, then publishing the entity, create a non default
+   * revision, without changing any fields. Then schedule this revision to be
+   * published. Afterwards, the entity should have no more 'pending' revisions
+   * according to Content Moderation. This pending flag ensures the
+   * 'Latest revision' tab no longer shows up in the UI.
+   */
+  public function testTransitionNoFieldChanges(): void {
+    $workflow = $this->createEditorialWorkflow();
+    $workflow->getTypePlugin()->addEntityTypeAndBundle('st_entity_test', 'st_entity_test');
+    $workflow->save();
+
+    /** @var \Drupal\Core\Entity\TranslatableRevisionableStorageInterface $entityStorage */
+    $entityStorage = \Drupal::entityTypeManager()->getStorage('st_entity_test');
+
+    $entity = TestEntity::create(['type' => 'st_entity_test']);
+
+    $entity = $entityStorage->createRevision($entity, FALSE);
+    $entity->name = 'rev1';
+    $entity->moderation_state = 'draft';
+    $entity->save();
+
+    $entity = $entityStorage->createRevision($entity, FALSE);
+    $entity->name = 'rev2';
+    $entity->moderation_state = 'published';
+    $entity->save();
+
+    /** @var \Drupal\content_moderation\ModerationInformationInterface $moderationInformation */
+    $moderationInformation = \Drupal::service('content_moderation.moderation_information');
+
+    // Do not change any storage fields this time.
+    $entity = $entityStorage->createRevision($entity, FALSE);
+    $entity->moderation_state = 'draft';
+    $entity->save();
+
+    // At this point there should be a pending revision.
+    $this->assertTrue($moderationInformation->hasPendingRevision($entity));
+
+    $scheduledTransition = ScheduledTransition::create([
+      'entity' => $entity,
+      'entity_revision_id' => $entity->getRevisionId(),
+      'author' => 1,
+      'workflow' => $workflow->id(),
+      'moderation_state' => 'published',
+      'transition_on' => (new \DateTime('1 year ago'))->getTimestamp(),
+    ]);
+    $scheduledTransition->save();
+    $this->runTransition($scheduledTransition);
+
+    $this->assertFalse($moderationInformation->hasPendingRevision($entity));
+  }
+
+  /**
    * Checks and runs any ready transitions.
    *
    * @param \Drupal\scheduled_transitions\Entity\ScheduledTransitionInterface $scheduledTransition

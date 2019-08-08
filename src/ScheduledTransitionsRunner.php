@@ -9,7 +9,9 @@ use Drupal\content_moderation\ModerationInformationInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Entity\RevisionableInterface;
 use Drupal\Core\Entity\RevisionLogInterface;
+use Drupal\Core\Entity\TranslatableRevisionableStorageInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\Core\TypedData\TranslatableInterface;
 use Drupal\Core\Utility\Token;
@@ -191,11 +193,26 @@ class ScheduledTransitionsRunner implements ScheduledTransitionsRunnerInterface 
       ],
     ];
 
+    // Creating revisions via createRevision to invoke
+    // setRevisionTranslationAffected and whatever other logic doesn't happen
+    // automatically by simply setting setNewRevision on its own.
+    $createRevision = function (RevisionableInterface $revision): RevisionableInterface {
+      $entityStorage = $this->entityTypeManager->getStorage($revision->getEntityTypeId());
+      if ($entityStorage instanceof TranslatableRevisionableStorageInterface) {
+        // 'default' param: will be changed by content moderation anyway.
+        return $entityStorage->createRevision($revision, FALSE);
+      }
+      else {
+        $revision->setNewRevision();
+        return $revision;
+      }
+    };
+
     // Start the transition process.
     // Determine if latest before calling setNewRevision on $newRevision.
     $newIsLatest = $newRevision->getRevisionId() === $latest->getRevisionId();
+    $newRevision = $createRevision($newRevision);
     $newRevision->moderation_state = $newState->id();
-    $newRevision->setNewRevision();
 
     // If publishing the latest revision, then only set moderation state.
     if ($newIsLatest) {
@@ -226,7 +243,7 @@ class ScheduledTransitionsRunner implements ScheduledTransitionsRunnerInterface 
         // To republish, this revision cannot be published, and the state for
         // this revision must still exist.
         if (!$isLatestRevisionPublished && $originalLatestState) {
-          $latest->setNewRevision();
+          $latest = $createRevision($latest);
           $this->logger->info('Reverted @original_latest_state revision #@original_revision_id back to top', $targs);
           if ($latest instanceof RevisionLogInterface) {
             $template = $settings->get('message_transition_copy_latest_draft');
