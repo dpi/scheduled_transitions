@@ -27,7 +27,7 @@ use Drupal\workflows\WorkflowInterface;
  *   ),
  *   label_collection = @Translation("Scheduled transitions"),
  *   base_table = "scheduled_transition",
- *   data_table = "scheduled_transition_field_data",
+ *   data_table = "scheduled_transition",
  *   translatable = FALSE,
  *   entity_keys = {
  *     "id" = "id",
