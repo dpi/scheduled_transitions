@@ -109,7 +109,7 @@ class ScheduledTransitionAddForm extends ContentEntityForm {
    * {@inheritdoc}
    */
   public function form(array $form, FormStateInterface $form_state): array {
-    $form['#theme'] = 'scheduled_transitions_form_add';
+    $form['scheduled_transitions']['#theme'] = 'scheduled_transitions_form_add';
 
     $entity = $this->getEntity();
 
@@ -125,7 +125,7 @@ class ScheduledTransitionAddForm extends ContentEntityForm {
     $newMetaWrapperId = 'new-meta-wrapper';
     $toOptionsWrapperId = 'to-options-wrapper';
 
-    $form['revision'] = [
+    $form['scheduled_transitions']['revision'] = [
       '#type' => 'tableselect',
       '#header' => $header,
       '#caption' => $this->t('Select which revision you wish to move to a new state.'),
@@ -146,7 +146,7 @@ class ScheduledTransitionAddForm extends ContentEntityForm {
       '#new_meta_wrapper_id' => $newMetaWrapperId,
     ];
 
-    $form['new_meta'] = [
+    $form['scheduled_transitions']['new_meta'] = [
       '#type' => 'container',
       '#attributes' => ['class' => ['container-inline']],
       '#prefix' => '<div id="' . $newMetaWrapperId . '">',
@@ -171,8 +171,8 @@ class ScheduledTransitionAddForm extends ContentEntityForm {
     }
 
     if ($revision > 0) {
-      $form['new_meta']['state_help']['#markup'] = $this->t('<strong>Execute transition</strong>');
-      $form['new_meta']['state'] = [
+      $form['scheduled_transitions']['new_meta']['state_help']['#markup'] = $this->t('<strong>Execute transition</strong>');
+      $form['scheduled_transitions']['new_meta']['state'] = [
         '#type' => 'select',
         '#options' => $stateOptions,
         '#empty_option' => $this->t('- Select -'),
@@ -184,26 +184,26 @@ class ScheduledTransitionAddForm extends ContentEntityForm {
         ],
       ];
 
-      $form['new_meta']['on_help']['#markup'] = $this->t('<strong>on date</strong>');
-      $form['new_meta']['on'] = [
+      $form['scheduled_transitions']['new_meta']['on_help']['#markup'] = $this->t('<strong>on date</strong>');
+      $form['scheduled_transitions']['new_meta']['on'] = [
         '#type' => 'datetime',
         '#default_value' => new \DateTime(),
         '#required' => TRUE,
       ];
     }
     else {
-      $form['new_meta']['state_help']['#markup'] = $this->t('Select a revision above');
+      $form['scheduled_transitions']['new_meta']['state_help']['#markup'] = $this->t('Select a revision above');
     }
 
     /** @var \Drupal\content_moderation\ContentModerationState|null $to */
     $to = !empty($input['state']) ? $workflowPlugin->getState($input['state']) : NULL;
-    $form['to_options'] = [
+    $form['scheduled_transitions']['to_options'] = [
       '#type' => 'container',
       '#prefix' => '<div id="' . $toOptionsWrapperId . '">',
       '#suffix' => '</div>',
     ];
     if ($to && $to->isDefaultRevisionState()) {
-      $form['to_options']['recreate_non_default_head'] = [
+      $form['scheduled_transitions']['to_options']['recreate_non_default_head'] = [
         '#type' => 'checkbox',
         '#title' => $this->t('Recreate pending revision'),
         '#description' => $this->t('Before creating this revision, check if there is any pending work. If so then recreate it. Regardless of choice, revisions are safely retained in history, and can be reverted manually.'),
@@ -248,14 +248,14 @@ class ScheduledTransitionAddForm extends ContentEntityForm {
    * Ajax handler for new meta container.
    */
   public function ajaxCallbackNewMeta($form, FormStateInterface $form_state): array {
-    return $form['new_meta'];
+    return $form['scheduled_transitions']['new_meta'];
   }
 
   /**
    * Ajax handler for to options container.
    */
   public function ajaxCallbackToOptions($form, FormStateInterface $form_state): array {
-    return $form['to_options'];
+    return $form['scheduled_transitions']['to_options'];
   }
 
   /**
@@ -263,7 +263,7 @@ class ScheduledTransitionAddForm extends ContentEntityForm {
    */
   public function validateForm(array &$form, FormStateInterface $form_state): void {
     if (empty($form_state->getValue('revision'))) {
-      $form_state->setError($form['revision'], $this->t('Revision must be selected.'));
+      $form_state->setError($form['scheduled_transitions']['revision'], $this->t('Revision must be selected.'));
     }
   }
 
