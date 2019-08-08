@@ -194,8 +194,8 @@ class ScheduledTransitionsRunner implements ScheduledTransitionsRunnerInterface 
     ];
 
     // Creating revisions via createRevision to invoke
-    // setRevisionTranslationAffected and whatever other nonsense that doesnt
-    // happen automatically by simply setting setNewRevision on its own.
+    // setRevisionTranslationAffected and whatever other logic doesn't happen
+    // automatically by simply setting setNewRevision on its own.
     $createRevision = function (RevisionableInterface $revision): RevisionableInterface {
       $entityStorage = $this->entityTypeManager->getStorage($revision->getEntityTypeId());
       if ($entityStorage instanceof TranslatableRevisionableStorageInterface) {
