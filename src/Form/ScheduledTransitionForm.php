@@ -150,7 +150,15 @@ class ScheduledTransitionForm extends ContentEntityForm {
 
         // Author.
         $author = $scheduledTransition->getAuthor();
-        $row['author'] = $author ? $author->toLink() : $this->t('- Missing user -');
+        if ($author) {
+          $row['author']['data'] = $this->moduleHandler->moduleExists('user') ? [
+            '#theme' => 'username',
+            '#account' => $author,
+          ] : $author->toLink();
+        }
+        else {
+          $row['author']['data'] = $this->t('- Missing user -');
+        }
 
         // Operations.
         $operations = $this->entityTypeManager

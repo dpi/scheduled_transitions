@@ -394,7 +394,16 @@ class ScheduledTransitionAddForm extends ContentEntityForm {
           $option['revision_time']['data']['#plain_text'] = $this->dateFormatter
             ->format($entityRevision->getRevisionCreationTime());
           $revisionUser = $entityRevision->getRevisionUser();
-          $option['revision_author']['data'] = $revisionUser ? $revisionUser->toLink() : $this->t('- Missing user -');
+          if ($revisionUser) {
+            $option['revision_author']['data'] = $this->moduleHandler->moduleExists('user') ? [
+              '#theme' => 'username',
+              '#account' => $revisionUser,
+            ] : $revisionUser->toLink();
+          }
+          else {
+            $option['revision_author']['data'] = $this->t('- Missing user -');
+          }
+
           if ($revisionLog = $entityRevision->getRevisionLogMessage()) {
             $option['revision_log']['data'] = [
               '#markup' => $revisionLog,
