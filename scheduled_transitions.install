@@ -55,7 +55,7 @@ function scheduled_transitions_update_8003(): void {
  * Updates data_table in scheduled_transition entity definition.
  */
 function scheduled_transitions_update_8004(): void {
-  $entityTypeId = 'scheduled_transitions';
+  $entityTypeId = 'scheduled_transition';
   $definitionUpdateManager = \Drupal::entityDefinitionUpdateManager();
   $entityType = $definitionUpdateManager->getEntityType($entityTypeId);
 
