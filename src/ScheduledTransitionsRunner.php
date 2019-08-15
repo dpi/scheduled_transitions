@@ -159,6 +159,9 @@ class ScheduledTransitionsRunner implements ScheduledTransitionsRunnerInterface 
    *   The latest current revision.
    */
   protected function transitionEntity(ScheduledTransitionInterface $scheduledTransition, EntityInterface $newRevision, EntityInterface $latest): void {
+    /** @var \Drupal\Core\Entity\RevisionableStorageInterface $entityStorage */
+    $entityStorage = $this->entityTypeManager->getStorage($newRevision->getEntityTypeId());
+
     $settings = $this->configFactory->get('scheduled_transitions.settings');
 
     // Check this now before any new saves.
@@ -193,25 +196,16 @@ class ScheduledTransitionsRunner implements ScheduledTransitionsRunnerInterface 
       ],
     ];
 
-    // Creating revisions via createRevision to invoke
-    // setRevisionTranslationAffected and whatever other logic doesn't happen
-    // automatically by simply setting setNewRevision on its own.
-    $createRevision = function (RevisionableInterface $revision): RevisionableInterface {
-      $entityStorage = $this->entityTypeManager->getStorage($revision->getEntityTypeId());
-      if ($entityStorage instanceof TranslatableRevisionableStorageInterface) {
-        // 'default' param: will be changed by content moderation anyway.
-        return $entityStorage->createRevision($revision, FALSE);
-      }
-      else {
-        $revision->setNewRevision();
-        return $revision;
-      }
-    };
-
     // Start the transition process.
     // Determine if latest before calling setNewRevision on $newRevision.
     $newIsLatest = $newRevision->getRevisionId() === $latest->getRevisionId();
-    $newRevision = $createRevision($newRevision);
+
+    // Creating revisions via createRevision to invoke
+    // setRevisionTranslationAffected and whatever other logic doesn't happen
+    // automatically by simply setting setNewRevision on its own.
+    // 'default' param: will be changed by content moderation anyway, and
+    // ->setNewRevision() is called.
+    $newRevision = $entityStorage->createRevision($newRevision, FALSE);
     $newRevision->moderation_state = $newState->id();
 
     // If publishing the latest revision, then only set moderation state.
@@ -243,7 +237,7 @@ class ScheduledTransitionsRunner implements ScheduledTransitionsRunnerInterface 
         // To republish, this revision cannot be published, and the state for
         // this revision must still exist.
         if (!$isLatestRevisionPublished && $originalLatestState) {
-          $latest = $createRevision($latest);
+          $latest = $entityStorage->createRevision($latest, FALSE);
           $this->logger->info('Reverted @original_latest_state revision #@original_revision_id back to top', $targs);
           if ($latest instanceof RevisionLogInterface) {
             $template = $settings->get('message_transition_copy_latest_draft');
