@@ -595,6 +595,41 @@ class ScheduledTransitionTest extends KernelTestBase {
   }
 
   /**
+   * Test the changed timestamp is updated when a transition is executed.
+   */
+  public function testChangedTimeUpdated() {
+    $workflow = $this->createEditorialWorkflow();
+    $workflow->getTypePlugin()->addEntityTypeAndBundle('st_entity_test', 'st_entity_test');
+    $workflow->save();
+
+    /** @var \Drupal\Core\Entity\TranslatableRevisionableStorageInterface $entityStorage */
+    $entityStorage = \Drupal::entityTypeManager()->getStorage('st_entity_test');
+
+    $entity = TestEntity::create(['type' => 'st_entity_test']);
+
+    $entity = $entityStorage->createRevision($entity, FALSE);
+    $entity->name = 'rev1';
+    $entity->changed = (new \DateTime('1 year ago'))->getTimestamp();
+    $entity->moderation_state = 'draft';
+    $entity->save();
+
+    $scheduledTransition = ScheduledTransition::create([
+      'entity' => $entity,
+      'entity_revision_id' => $entity->getRevisionId(),
+      'author' => 1,
+      'workflow' => $workflow->id(),
+      'moderation_state' => 'published',
+      'transition_on' => (new \DateTime('1 year ago'))->getTimestamp(),
+    ]);
+    $scheduledTransition->save();
+    $this->runTransition($scheduledTransition);
+
+    /** @var \Drupal\Component\Datetime\TimeInterface $time */
+    $time = \Drupal::service('datetime.time');
+    $this->assertEquals($time->getRequestTime(), $entityStorage->load($entity->id())->changed->value);
+  }
+
+  /**
    * Checks and runs any ready transitions.
    *
    * @param \Drupal\scheduled_transitions\Entity\ScheduledTransitionInterface $scheduledTransition

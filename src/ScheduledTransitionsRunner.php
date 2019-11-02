@@ -7,6 +7,7 @@ namespace Drupal\scheduled_transitions;
 use Drupal\Component\Datetime\TimeInterface;
 use Drupal\content_moderation\ModerationInformationInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Entity\EntityChangedInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Entity\RevisionableInterface;
@@ -207,6 +208,10 @@ class ScheduledTransitionsRunner implements ScheduledTransitionsRunnerInterface 
     // ->setNewRevision() is called.
     $newRevision = $entityStorage->createRevision($newRevision, FALSE);
     $newRevision->moderation_state = $newState->id();
+
+    if ($newRevision instanceof EntityChangedInterface) {
+      $newRevision->setChangedTime($this->time->getRequestTime());
+    }
 
     // If publishing the latest revision, then only set moderation state.
     if ($newIsLatest) {
