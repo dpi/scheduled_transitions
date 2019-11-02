@@ -10,6 +10,7 @@ use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\Core\Entity\ContentEntityType;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Entity\TranslatableInterface;
 use Drupal\scheduled_transitions\Form\Entity\ScheduledTransitionAddForm;
 use Drupal\scheduled_transitions\Form\ScheduledTransitionForm;
 use Drupal\scheduled_transitions\Form\ScheduledTransitionsSettingsForm as SettingsForm;
@@ -213,6 +214,9 @@ class ScheduledTransitionsEntityHooks implements ContainerInjectionInterface {
       ->accessCheck(FALSE);
     if ($revision_match) {
       $query->condition('entity_revision_id', $entity->getRevisionId());
+    }
+    if ($entity instanceof TranslatableInterface && !$entity->isDefaultTranslation()) {
+      $query->condition('entity_revision_langcode', $entity->language()->getId());
     }
     $ids = $query->execute();
     return $transitionStorage->loadMultiple($ids);

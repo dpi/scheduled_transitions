@@ -359,6 +359,76 @@ class ScheduledTransitionTest extends KernelTestBase {
   }
 
   /**
+   * Test scheduled transitions are cleaned up when translations are deleted.
+   */
+  public function testScheduledTransitionEntityTranslationCleanUp() {
+    ConfigurableLanguage::createFromLangcode('de')->save();
+    ConfigurableLanguage::createFromLangcode('fr')->save();
+
+    $workflow = $this->createEditorialWorkflow();
+    $workflow->getTypePlugin()->addEntityTypeAndBundle('st_entity_test', 'st_entity_test');
+    $workflow->save();
+
+    $entity = TestEntity::create(['type' => 'st_entity_test']);
+    $de = $entity->addTranslation('de');
+    $fr = $entity->addTranslation('fr');
+    $de->name = 'deName';
+    $fr->name = 'frName';
+    $de->moderation_state = 'draft';
+    $fr->moderation_state = 'draft';
+    $entity->save();
+
+    $originalDeRevisionId = $de->getRevisionId();
+    $originalFrRevisionId = $fr->getRevisionId();
+    $this->assertEquals(1, $entity->id());
+    $this->assertEquals(1, $entity->getRevisionId());
+    $this->assertEquals(1, $originalDeRevisionId);
+    $this->assertEquals(1, $originalFrRevisionId);
+
+    $author = User::create([
+      'uid' => 2,
+      'name' => $this->randomMachineName(),
+    ]);
+    $author->save();
+    $scheduledTransition = ScheduledTransition::create([
+      'entity' => $entity,
+      'entity_revision_id' => $originalDeRevisionId,
+      // Transition 'de'.
+      'entity_revision_langcode' => 'de',
+      'author' => $author,
+      'workflow' => $workflow->id(),
+      'moderation_state' => 'published',
+      'transition_on' => (new \DateTime('2 Feb 2018 11am'))->getTimestamp(),
+    ]);
+    $scheduledTransition->save();
+    $scheduledTransition = ScheduledTransition::create([
+      'entity' => $entity,
+      'entity_revision_id' => $originalFrRevisionId,
+      // Transition 'fr'.
+      'entity_revision_langcode' => 'fr',
+      'author' => $author,
+      'workflow' => $workflow->id(),
+      'moderation_state' => 'published',
+      'transition_on' => (new \DateTime('2 Feb 2018 11am'))->getTimestamp(),
+    ]);
+    $scheduledTransition->save();
+
+    $transitions = ScheduledTransition::loadMultiple();
+    $this->assertCount(2, $transitions);
+
+    // Delete a translation of the entity.
+    $entity->removeTranslation('fr');
+    $entity->save();
+
+    $transitions = ScheduledTransition::loadMultiple();
+    $this->assertCount(1, $transitions);
+
+    /** @var \Drupal\scheduled_transitions\Entity\ScheduledTransitionInterface $transition */
+    $transition = reset($transitions);
+    $this->assertEquals('de', $transition->getEntityRevisionLanguage());
+  }
+
+  /**
    * Test scheduled transitions are cleaned up when revisions are deleted.
    */
   public function testScheduledTransitionEntityRevisionCleanUp() {
@@ -507,7 +577,7 @@ class ScheduledTransitionTest extends KernelTestBase {
     $this->assertEquals(1, $entity->id());
     $this->assertEquals(1, $entity->getRevisionId());
     $this->assertEquals(1, $originalDeRevisionId);
-    $this->assertEquals(1, $originalDeRevisionId);
+    $this->assertEquals(1, $originalFrRevisionId);
 
     $author = User::create([
       'uid' => 2,

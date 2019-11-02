@@ -61,7 +61,7 @@ function scheduled_transitions_entity_type_build(array &$entity_types) {
 /**
  * Implements hook_entity_delete().
  *
- * @see \Drupal\scheduled_transitions\ScheduledTransitionsEntityHooks::entityTypeBuild
+ * @see \Drupal\scheduled_transitions\ScheduledTransitionsEntityHooks::entityDelete
  */
 function scheduled_transitions_entity_delete(EntityInterface $entity): void {
   \Drupal::classResolver(ScheduledTransitionsEntityHooks::class)
@@ -69,9 +69,19 @@ function scheduled_transitions_entity_delete(EntityInterface $entity): void {
 }
 
 /**
+ * Implements hook_entity_translation_delete().
+ *
+ * @see \Drupal\scheduled_transitions\ScheduledTransitionsEntityHooks::entityDelete()
+ */
+function scheduled_transitions_entity_translation_delete(EntityInterface $entity): void {
+  \Drupal::classResolver(ScheduledTransitionsEntityHooks::class)
+    ->entityDelete($entity);
+}
+
+/**
  * Implements hook_entity_revision_delete().
  *
- * @see \Drupal\scheduled_transitions\ScheduledTransitionsEntityHooks::entityTypeBuild
+ * @see \Drupal\scheduled_transitions\ScheduledTransitionsEntityHooks::entityRevisionDelete
  */
 function scheduled_transitions_entity_revision_delete(EntityInterface $entity): void {
   \Drupal::classResolver(ScheduledTransitionsEntityHooks::class)
