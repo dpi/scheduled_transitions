@@ -15,6 +15,11 @@ use Drupal\workflows\WorkflowInterface;
 interface ScheduledTransitionInterface extends ContentEntityInterface {
 
   /**
+   * Option to schedule latest revision.
+   */
+  public const OPTION_LATEST_REVISION = 'latest_revision';
+
+  /**
    * Get the entity this scheduled transition is for.
    *
    * @return \Drupal\Core\Entity\EntityInterface|null
