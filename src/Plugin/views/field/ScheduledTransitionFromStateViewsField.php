@@ -5,7 +5,6 @@ declare(strict_types = 1);
 namespace Drupal\scheduled_transitions\Plugin\views\field;
 
 use Drupal\Core\Entity\EntityTypeManagerInterface;
-use Drupal\scheduled_transitions\Entity\ScheduledTransition;
 use Drupal\views\Plugin\views\field\FieldPluginBase;
 use Drupal\views\ResultRow;
 use Symfony\Component\DependencyInjection\ContainerInterface;
