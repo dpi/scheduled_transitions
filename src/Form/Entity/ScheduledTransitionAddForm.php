@@ -189,7 +189,7 @@ class ScheduledTransitionAddForm extends ContentEntityForm {
         $transitionOptions[$toTransition->id()] = $toTransition->label();
       }
 
-      $form['scheduled_transitions']['new_meta']['transition']['#markup'] = $this->t('<strong>Execute transition</strong>');
+      $form['scheduled_transitions']['new_meta']['transition_help']['#markup'] = $this->t('<strong>Execute transition</strong>');
       $form['scheduled_transitions']['new_meta']['transition'] = [
         '#type' => 'select',
         '#options' => $transitionOptions,
@@ -210,17 +210,17 @@ class ScheduledTransitionAddForm extends ContentEntityForm {
       ];
     }
     else {
-      $form['scheduled_transitions']['new_meta']['transition']['#markup'] = $this->t('Select a revision above');
+      $form['scheduled_transitions']['new_meta']['transition_help']['#markup'] = $this->t('Select a revision above');
     }
 
-    /** @var \Drupal\workflows\TransitionInterface|null $to */
-    $to = !empty($input['transition']) ? $workflowPlugin->getTransition($input['transition']) : NULL;
+    /** @var \Drupal\workflows\TransitionInterface|null $transition */
+    $transition = !empty($input['transition']) ? $workflowPlugin->getTransition($input['transition']) : NULL;
     $form['scheduled_transitions']['to_options'] = [
       '#type' => 'container',
       '#prefix' => '<div id="' . $toOptionsWrapperId . '">',
       '#suffix' => '</div>',
     ];
-    if ($to && $to->to()->isDefaultRevisionState()) {
+    if ($transition && $transition->to()->isDefaultRevisionState()) {
       $form['scheduled_transitions']['to_options']['recreate_non_default_head'] = [
         '#type' => 'checkbox',
         '#title' => $this->t('Recreate pending revision'),

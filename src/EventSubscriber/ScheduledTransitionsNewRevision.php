@@ -111,7 +111,8 @@ class ScheduledTransitionsNewRevision implements EventSubscriberInterface {
 
     // Load the latest revision.
     $entity = $scheduledTransition->getEntity();
-    if ($entity) {/** @var \Drupal\Core\Entity\EntityStorageInterface|\Drupal\Core\Entity\RevisionableStorageInterface $entityStorage */
+    if ($entity) {
+      /** @var \Drupal\Core\Entity\EntityStorageInterface|\Drupal\Core\Entity\RevisionableStorageInterface $entityStorage */
       $entityStorage = $this->entityTypeManager->getStorage($entity->getEntityTypeId());
       $latestRevisionId = $entityStorage->getLatestRevisionId($entity->id());
       if ($latestRevisionId) {
