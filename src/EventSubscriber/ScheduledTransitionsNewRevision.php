@@ -9,7 +9,6 @@ use Drupal\Core\TypedData\TranslatableInterface;
 use Drupal\scheduled_transitions\Entity\ScheduledTransition;
 use Drupal\scheduled_transitions\Event\ScheduledTransitionsEvents;
 use Drupal\scheduled_transitions\Event\ScheduledTransitionsNewRevisionEvent;
-use Drupal\scheduled_transitions\Exception\ScheduledTransitionMissingEntity;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
@@ -113,12 +112,12 @@ class ScheduledTransitionsNewRevision implements EventSubscriberInterface {
     // Load the latest revision.
     $entity = $scheduledTransition->getEntity();
     if ($entity) {/** @var \Drupal\Core\Entity\EntityStorageInterface|\Drupal\Core\Entity\RevisionableStorageInterface $entityStorage */
-    $entityStorage = $this->entityTypeManager->getStorage($entity->getEntityTypeId());
-    $latestRevisionId = $entityStorage->getLatestRevisionId($entity->id());
-    if ($latestRevisionId) {
-      /** @var \Drupal\Core\Entity\EntityInterface|\Drupal\Core\Entity\RevisionableInterface $latest */
-      $newRevision = $entityStorage->loadRevision($latestRevisionId);
-    }
+      $entityStorage = $this->entityTypeManager->getStorage($entity->getEntityTypeId());
+      $latestRevisionId = $entityStorage->getLatestRevisionId($entity->id());
+      if ($latestRevisionId) {
+        /** @var \Drupal\Core\Entity\EntityInterface|\Drupal\Core\Entity\RevisionableInterface $latest */
+        $newRevision = $entityStorage->loadRevision($latestRevisionId);
+      }
     }
 
     if (!isset($newRevision)) {
