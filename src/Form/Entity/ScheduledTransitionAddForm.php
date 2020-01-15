@@ -22,12 +22,20 @@ use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\Core\Render\Element;
 use Drupal\Core\Render\Element\Tableselect;
 use Drupal\scheduled_transitions\Entity\ScheduledTransition;
+use Drupal\workflows\Transition;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Scheduled transitions add form.
  */
 class ScheduledTransitionAddForm extends ContentEntityForm {
+
+  /**
+   * Constant indicating the form key representing: latest revision.
+   *
+   * @internal will be made protected when PHP version is raised.
+   */
+  const LATEST_REVISION = 'latest_revision';
 
   /**
    * Various date related functionality.
@@ -109,6 +117,7 @@ class ScheduledTransitionAddForm extends ContentEntityForm {
    * {@inheritdoc}
    */
   public function form(array $form, FormStateInterface $form_state): array {
+    $account = $this->currentUser();
     $form['scheduled_transitions']['#theme'] = 'scheduled_transitions_form_add';
 
     $entity = $this->getEntity();
@@ -157,24 +166,33 @@ class ScheduledTransitionAddForm extends ContentEntityForm {
     $workflowPlugin = $workflow->getTypePlugin();
 
     // Populate options with nothing.
-    $stateOptions = [];
     $input = $form_state->getUserInput();
     $revision = $input['revision'] ?? 0;
-    if ($revision > 0) {
+    if (is_numeric($revision) && $revision > 0) {
       $entityStorage = $this->entityTypeManager->getStorage($entity->getEntityTypeId());
       $entityRevision = $entityStorage->loadRevision($revision);
       $toTransitions = $this->stateTransitionValidation
         ->getValidTransitions($entityRevision, $this->currentUser());
-      foreach ($toTransitions as $toTransition) {
-        $stateOptions[$toTransition->to()->id()] = $toTransition->label();
-      }
+    }
+    elseif (is_string($revision)) {
+      // Show all transitions as we cannot be sure what will be available.
+      // Cannot use getValidTransitions since it is only valid for the current
+      // state of the entity passed to it:
+      $toTransitions = array_filter($workflowPlugin->getTransitions(), function (Transition $transition) use ($workflow, $account) {
+        return $account->hasPermission('use ' . $workflow->id() . ' transition ' . $transition->id());
+      });
     }
 
-    if ($revision > 0) {
-      $form['scheduled_transitions']['new_meta']['state_help']['#markup'] = $this->t('<strong>Execute transition</strong>');
-      $form['scheduled_transitions']['new_meta']['state'] = [
+    if (isset($toTransitions)) {
+      $transitionOptions = [];
+      foreach ($toTransitions as $toTransition) {
+        $transitionOptions[$toTransition->id()] = $toTransition->label();
+      }
+
+      $form['scheduled_transitions']['new_meta']['transition_help']['#markup'] = $this->t('<strong>Execute transition</strong>');
+      $form['scheduled_transitions']['new_meta']['transition'] = [
         '#type' => 'select',
-        '#options' => $stateOptions,
+        '#options' => $transitionOptions,
         '#empty_option' => $this->t('- Select -'),
         '#required' => TRUE,
         '#ajax' => [
@@ -192,17 +210,17 @@ class ScheduledTransitionAddForm extends ContentEntityForm {
       ];
     }
     else {
-      $form['scheduled_transitions']['new_meta']['state_help']['#markup'] = $this->t('Select a revision above');
+      $form['scheduled_transitions']['new_meta']['transition_help']['#markup'] = $this->t('Select a revision above');
     }
 
-    /** @var \Drupal\content_moderation\ContentModerationState|null $to */
-    $to = !empty($input['state']) ? $workflowPlugin->getState($input['state']) : NULL;
+    /** @var \Drupal\workflows\TransitionInterface|null $transition */
+    $transition = !empty($input['transition']) ? $workflowPlugin->getTransition($input['transition']) : NULL;
     $form['scheduled_transitions']['to_options'] = [
       '#type' => 'container',
       '#prefix' => '<div id="' . $toOptionsWrapperId . '">',
       '#suffix' => '</div>',
     ];
-    if ($to && $to->isDefaultRevisionState()) {
+    if ($transition && $transition->to()->isDefaultRevisionState()) {
       $form['scheduled_transitions']['to_options']['recreate_non_default_head'] = [
         '#type' => 'checkbox',
         '#title' => $this->t('Recreate pending revision'),
@@ -272,16 +290,28 @@ class ScheduledTransitionAddForm extends ContentEntityForm {
    */
   public function submitForm(array &$form, FormStateInterface $form_state): void {
     $entity = $this->getEntity();
-    $entityRevisionId = $form_state->getValue('revision');
-    $workflow = $this->moderationInformation->getWorkflowForEntity($entity);
-    $newState = $form_state->getValue(['state']);
-    /** @var \Drupal\Core\Datetime\DrupalDateTime $onDate */
-    $onDate = $form_state->getValue(['on']);
-
     $options = [];
+
     if ($form_state->getValue('recreate_non_default_head')) {
       $options[ScheduledTransition::OPTION_RECREATE_NON_DEFAULT_HEAD] = TRUE;
     }
+
+    $revisionOption = $form_state->getValue('revision');
+    $entityRevisionId = 0;
+    if ($revisionOption === static::LATEST_REVISION) {
+      $options[ScheduledTransition::OPTION_LATEST_REVISION] = TRUE;
+    }
+    else {
+      $entityRevisionId = $revisionOption;
+    }
+
+    $workflow = $this->moderationInformation->getWorkflowForEntity($entity);
+    $transition = $form_state->getValue(['transition']);
+    $workflowPlugin = $workflow->getTypePlugin();
+    $newState = $workflowPlugin->getTransition($transition)->to()->id();
+
+    /** @var \Drupal\Core\Datetime\DrupalDateTime $onDate */
+    $onDate = $form_state->getValue(['on']);
 
     $scheduledTransitionStorage = $this->entityTypeManager->getStorage('scheduled_transition');
     /** @var \Drupal\scheduled_transitions\Entity\ScheduledTransitionInterface $scheduledTransition */
@@ -369,7 +399,7 @@ class ScheduledTransitionAddForm extends ContentEntityForm {
       return $revision instanceof TranslatableRevisionableInterface ? $revision->isRevisionTranslationAffected() : TRUE;
     });
 
-    return array_map(
+    $options = array_map(
       function (EntityInterface $entityRevision) use ($workflowStates): array {
         /** @var \Drupal\Core\Entity\EntityInterface|\Drupal\Core\Entity\RevisionableInterface $entityRevision */
         $option = [];
@@ -419,6 +449,20 @@ class ScheduledTransitionAddForm extends ContentEntityForm {
       },
       $entityRevisions
     );
+
+    $options = [
+      static::LATEST_REVISION => [
+        'revision_id' => [
+          'data' => $this->t('Latest revision'),
+        ],
+        'state' => [
+          'data' => $this->t('Automatically determines the latest revision at time of transition.'),
+          'colspan' => $entity instanceof RevisionLogInterface ? 4 : 1,
+        ],
+      ],
+    ] + $options;
+
+    return $options;
   }
 
 }

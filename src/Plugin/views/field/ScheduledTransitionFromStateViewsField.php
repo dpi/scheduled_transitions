@@ -5,6 +5,7 @@ declare(strict_types = 1);
 namespace Drupal\scheduled_transitions\Plugin\views\field;
 
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\scheduled_transitions\Entity\ScheduledTransition;
 use Drupal\views\Plugin\views\field\FieldPluginBase;
 use Drupal\views\ResultRow;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -74,14 +75,20 @@ class ScheduledTransitionFromStateViewsField extends FieldPluginBase {
     $entityStorage = $this->entityTypeManager->getStorage($entity->getEntityTypeId());
 
     $entityRevisionId = $scheduledTransition->getEntityRevisionId();
-    $entityRevision = $entityStorage->loadRevision($entityRevisionId);
-    $revisionTArgs = ['@revision_id' => $entityRevisionId];
-    if ($entityRevision) {
-      $fromState = $workflowStates[$entityRevision->moderation_state->value] ?? NULL;
-      return $fromState ? $fromState->label() : $this->t('- Missing from workflow/state -');
+    if (is_numeric($entityRevisionId) && $entityRevisionId > 0) {
+      $entityRevision = $entityStorage->loadRevision($entityRevisionId);
+
+      $revisionTArgs = ['@revision_id' => $entityRevisionId];
+      if ($entityRevision) {
+        $fromState = $workflowStates[$entityRevision->moderation_state->value] ?? NULL;
+        return $fromState ? $fromState->label() : $this->t('- Missing from workflow/state -');
+      }
+      else {
+        return $this->t('Deleted revision #@revision_id', $revisionTArgs);
+      }
     }
     else {
-      return $this->t('Deleted revision #@revision_id', $revisionTArgs);
+      return '';
     }
   }
 

@@ -6,6 +6,7 @@ namespace Drupal\scheduled_transitions\EventSubscriber;
 
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\TypedData\TranslatableInterface;
+use Drupal\scheduled_transitions\Entity\ScheduledTransition;
 use Drupal\scheduled_transitions\Event\ScheduledTransitionsEvents;
 use Drupal\scheduled_transitions\Event\ScheduledTransitionsNewRevisionEvent;
 use Psr\Log\LoggerInterface;
@@ -92,9 +93,57 @@ class ScheduledTransitionsNewRevision implements EventSubscriberInterface {
   }
 
   /**
+   * Latest revision functionality.
+   *
+   * Automatically determines the latest revision, which will be the new saved
+   * revision.
+   *
+   * @param \Drupal\scheduled_transitions\Event\ScheduledTransitionsNewRevisionEvent $event
+   *   New revision event.
+   */
+  public function latestRevision(ScheduledTransitionsNewRevisionEvent $event): void {
+    $scheduledTransition = $event->getScheduledTransition();
+
+    $options = $scheduledTransition->getOptions();
+    if (!isset($options[ScheduledTransition::OPTION_LATEST_REVISION])) {
+      return;
+    }
+
+    // Load the latest revision.
+    $entity = $scheduledTransition->getEntity();
+    if ($entity) {
+      /** @var \Drupal\Core\Entity\EntityStorageInterface|\Drupal\Core\Entity\RevisionableStorageInterface $entityStorage */
+      $entityStorage = $this->entityTypeManager->getStorage($entity->getEntityTypeId());
+      $latestRevisionId = $entityStorage->getLatestRevisionId($entity->id());
+      if ($latestRevisionId) {
+        /** @var \Drupal\Core\Entity\EntityInterface|\Drupal\Core\Entity\RevisionableInterface $latest */
+        $newRevision = $entityStorage->loadRevision($latestRevisionId);
+      }
+    }
+
+    if (!isset($newRevision)) {
+      return;
+    }
+
+    // Get the correct language.
+    $entityRevisionLanguage = $scheduledTransition->getEntityRevisionLanguage();
+    if ($entityRevisionLanguage && $newRevision instanceof TranslatableInterface && $newRevision->hasTranslation($entityRevisionLanguage)) {
+      $newRevision = $newRevision->getTranslation($entityRevisionLanguage);
+    }
+
+    $this->logger->debug('Latest revision was loaded for for scheduled transition #@id', [
+      '@id' => $scheduledTransition->id(),
+    ]);
+    $event->setNewRevision($newRevision);
+    $event->stopPropagation();
+  }
+
+  /**
    * {@inheritdoc}
    */
   public static function getSubscribedEvents(): array {
+    // Latest revision has priority over default.
+    $events[ScheduledTransitionsEvents::NEW_REVISION][] = ['latestRevision', 1000];
     $events[ScheduledTransitionsEvents::NEW_REVISION][] = ['newRevision'];
     return $events;
   }

@@ -61,11 +61,6 @@ class ScheduledTransition extends ContentEntityBase implements ScheduledTransiti
   public const OPTION_RECREATE_NON_DEFAULT_HEAD = 'recreate_non_default_head';
 
   /**
-   * Option to schedule latest revision.
-   */
-  public const OPTION_LATEST_REVISION = 'latest_revision';
-
-  /**
    * {@inheritdoc}
    */
   public static function baseFieldDefinitions(EntityTypeInterface $entity_type): array {

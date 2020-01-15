@@ -12,6 +12,7 @@ use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\Core\Language\LanguageManagerInterface;
+use Drupal\scheduled_transitions\Entity\ScheduledTransition;
 use Drupal\scheduled_transitions\Entity\ScheduledTransitionInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -133,11 +134,23 @@ class ScheduledTransitionForm extends ContentEntityForm {
           $row['from_state'] = $fromState ? $fromState->label() : $this->t('- Missing from workflow/state -');
         }
         else {
-          $row['from_revision'] = [
-            // Span 'from_revision', 'from_state'.
-            'colspan' => 2,
-            'data' => $this->t('Deleted revision #@revision_id', $revisionTArgs),
-          ];
+          if (is_numeric($entityRevisionId) && $entityRevisionId > 0) {
+            $row['from_revision'] = [
+              // Span 'from_revision', 'from_state'.
+              'colspan' => 2,
+              'data' => $this->t('Deleted revision #@revision_id', $revisionTArgs),
+            ];
+          }
+          else {
+            $options = $scheduledTransition->getOptions();
+            $text = isset($options[ScheduledTransition::OPTION_LATEST_REVISION])
+              ? $this->t('Latest revision')
+              : $this->t('Dynamic');
+            $row['from_revision'] = [
+              'colspan' => 2,
+              'data' => $text,
+            ];
+          }
         }
 
         // To.
