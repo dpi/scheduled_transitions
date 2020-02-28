@@ -56,7 +56,6 @@ class ScheduledTransitionEntityTest extends BrowserTestBase {
     $workflow->save();
 
     $currentUser = $this->drupalCreateUser([
-      'administer st_entity_test entities',
       'use editorial transition create_new_draft',
       'use editorial transition publish',
       'use editorial transition archive',
@@ -66,6 +65,11 @@ class ScheduledTransitionEntityTest extends BrowserTestBase {
 
     $entity = ScheduledTransitionsTestEntity::create(['type' => 'st_entity_test']);
     $entity->save();
+
+    \Drupal::configFactory()->getEditable('scheduled_transitions.settings')
+      ->set('mirror_operations.view scheduled transition', '')
+      ->save(TRUE);
+    Cache::invalidateTags([SettingsForm::SETTINGS_TAG]);
 
     $this->drupalGet($entity->toUrl(ScheduledTransitionsRouteProvider::LINK_TEMPLATE));
     $this->assertSession()->statusCodeEquals(200);

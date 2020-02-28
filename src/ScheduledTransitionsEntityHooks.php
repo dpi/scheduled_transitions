@@ -141,40 +141,31 @@ class ScheduledTransitionsEntityHooks implements ContainerInjectionInterface {
    */
   public function entityAccess(EntityInterface $entity, string $operation, AccountInterface $account): AccessResultInterface {
     // Determines if a user has access to view or add scheduled transitions for
-    // an entity. Users must always have the entity:bundle permission. If the
-    // mirror operation config is enabled then we allow via that. Otherwise if
-    // the mirror operation is off some custom code provided by the site must
-    // respond with allowed for
-    // ScheduledTransitionsPermissions::ENTITY_OPERATION* operations.
+    // an entity. If the mirror operation config is enabled then we allow via
+    // that. Otherwise the user must have the entity:bundle permission.
     $access = AccessResult::neutral();
 
     if ($operation === Permissions::ENTITY_OPERATION_VIEW_TRANSITIONS) {
-      $access->cachePerPermissions();
-      $permission = Permissions::viewScheduledTransitionsPermission($entity->getEntityTypeId(), $entity->bundle());
-      if ($account->hasPermission($permission)) {
-        $access->addCacheTags([SettingsForm::SETTINGS_TAG]);
-        $mirrorOperation = $this->mirrorOperations('view scheduled transition');
-        if (isset($mirrorOperation)) {
-          $access = $access->orIf($entity->access($mirrorOperation, $account, TRUE));
-        }
+      $mirrorOperation = $this->mirrorOperations($operation);
+      if ($mirrorOperation === NULL) {
+        $permission = Permissions::viewScheduledTransitionsPermission($entity->getEntityTypeId(), $entity->bundle());
+        $access = $access::allowedIfHasPermission($account, $permission);
       }
       else {
-        $access = $access->andIf(AccessResult::forbidden("The '$permission' permission is required."));
+        $access = $entity->access($mirrorOperation, $account, TRUE);
       }
+      $access->addCacheTags([SettingsForm::SETTINGS_TAG]);
     }
     elseif ($operation === Permissions::ENTITY_OPERATION_ADD_TRANSITION) {
-      $access->cachePerPermissions();
-      $permission = Permissions::addScheduledTransitionsPermission($entity->getEntityTypeId(), $entity->bundle());
-      if ($account->hasPermission($permission)) {
-        $access->addCacheTags([SettingsForm::SETTINGS_TAG]);
-        $mirrorOperation = $this->mirrorOperations('add scheduled transition');
-        if (isset($mirrorOperation)) {
-          $access = $access->orIf($entity->access($mirrorOperation, $account, TRUE));
-        }
+      $mirrorOperation = $this->mirrorOperations($operation);
+      if ($mirrorOperation === NULL) {
+        $permission = Permissions::addScheduledTransitionsPermission($entity->getEntityTypeId(), $entity->bundle());
+        $access = $access::allowedIfHasPermission($account, $permission);
       }
       else {
-        $access = $access->andIf(AccessResult::forbidden("The '$permission' permission is required."));
+        $access = $entity->access($mirrorOperation, $account, TRUE);
       }
+      $access->addCacheTags([SettingsForm::SETTINGS_TAG]);
     }
 
     return $access;
@@ -192,7 +183,7 @@ class ScheduledTransitionsEntityHooks implements ContainerInjectionInterface {
   protected function mirrorOperations(string $operation): ?string {
     $mirrorOperation = $this->configFactory->get('scheduled_transitions.settings')
       ->get('mirror_operations.' . $operation);
-    return is_string($mirrorOperation) ? $mirrorOperation : NULL;
+    return $mirrorOperation ?: NULL;
   }
 
   /**

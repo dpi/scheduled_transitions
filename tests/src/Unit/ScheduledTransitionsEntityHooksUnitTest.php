@@ -6,6 +6,7 @@ namespace Drupal\Tests\scheduled_transitions\Unit;
 
 use Drupal\content_moderation\ModerationInformationInterface;
 use Drupal\Core\Access\AccessResult;
+use Drupal\Core\Access\AccessResultAllowed;
 use Drupal\Core\Access\AccessResultForbidden;
 use Drupal\Core\Access\AccessResultNeutral;
 use Drupal\Core\Cache\Context\CacheContextsManager;
@@ -110,9 +111,20 @@ class ScheduledTransitionsEntityHooksUnitTest extends UnitTestCase {
       ->with('view scheduled transitions foo bar')
       ->willReturn(FALSE);
 
+    $testConfig = $this->createMock(ImmutableConfig::class);
+    $testConfig->expects($this->once())
+      ->method('get')
+      ->with('mirror_operations.' . ScheduledTransitionsPermissions::ENTITY_OPERATION_VIEW_TRANSITIONS)
+      ->willReturn('');
+
+    $this->testConfigFactory->expects($this->once())
+      ->method('get')
+      ->with('scheduled_transitions.settings')
+      ->willReturn($testConfig);
+
     /** @var \Drupal\Core\Access\AccessResultForbidden $access */
     $access = $entityHooks->entityAccess($entity, $operation, $account);
-    $this->assertInstanceOf(AccessResultForbidden::class, $access);
+    $this->assertInstanceOf(AccessResultNeutral::class, $access);
     $this->assertEquals(['user.permissions'], $access->getCacheContexts());
     $this->assertEquals("The 'view scheduled transitions foo bar' permission is required.", $access->getReason());
   }
@@ -144,9 +156,20 @@ class ScheduledTransitionsEntityHooksUnitTest extends UnitTestCase {
       ->with('add scheduled transitions foo bar')
       ->willReturn(FALSE);
 
+    $testConfig = $this->createMock(ImmutableConfig::class);
+    $testConfig->expects($this->once())
+      ->method('get')
+      ->with('mirror_operations.' . ScheduledTransitionsPermissions::ENTITY_OPERATION_ADD_TRANSITION)
+      ->willReturn('');
+
+    $this->testConfigFactory->expects($this->once())
+      ->method('get')
+      ->with('scheduled_transitions.settings')
+      ->willReturn($testConfig);
+
     /** @var \Drupal\Core\Access\AccessResultForbidden $access */
     $access = $entityHooks->entityAccess($entity, $operation, $account);
-    $this->assertInstanceOf(AccessResultForbidden::class, $access);
+    $this->assertInstanceOf(AccessResultNeutral::class, $access);
     $this->assertEquals(['user.permissions'], $access->getCacheContexts());
     $this->assertEquals("The 'add scheduled transitions foo bar' permission is required.", $access->getReason());
   }
@@ -163,7 +186,7 @@ class ScheduledTransitionsEntityHooksUnitTest extends UnitTestCase {
     $testConfig->expects($this->once())
       ->method('get')
       ->with('mirror_operations.' . ScheduledTransitionsPermissions::ENTITY_OPERATION_VIEW_TRANSITIONS)
-      ->willReturn(NULL);
+      ->willReturn('');
 
     $this->testConfigFactory->expects($this->once())
       ->method('get')
@@ -192,9 +215,8 @@ class ScheduledTransitionsEntityHooksUnitTest extends UnitTestCase {
 
     /** @var \Drupal\Core\Access\AccessResultForbidden $access */
     $access = $entityHooks->entityAccess($entity, $operation, $account);
-    $this->assertInstanceOf(AccessResultNeutral::class, $access);
+    $this->assertInstanceOf(AccessResultAllowed::class, $access);
     $this->assertEquals(['user.permissions'], $access->getCacheContexts());
-    $this->assertNull($access->getReason());
     $this->assertEquals([ScheduledTransitionsSettingsForm::SETTINGS_TAG], $access->getCacheTags());
   }
 
@@ -210,7 +232,7 @@ class ScheduledTransitionsEntityHooksUnitTest extends UnitTestCase {
     $testConfig->expects($this->once())
       ->method('get')
       ->with('mirror_operations.' . ScheduledTransitionsPermissions::ENTITY_OPERATION_ADD_TRANSITION)
-      ->willReturn(NULL);
+      ->willReturn('');
 
     $this->testConfigFactory->expects($this->once())
       ->method('get')
@@ -239,9 +261,8 @@ class ScheduledTransitionsEntityHooksUnitTest extends UnitTestCase {
 
     /** @var \Drupal\Core\Access\AccessResultForbidden $access */
     $access = $entityHooks->entityAccess($entity, $operation, $account);
-    $this->assertInstanceOf(AccessResultNeutral::class, $access);
+    $this->assertInstanceOf(AccessResultAllowed::class, $access);
     $this->assertEquals(['user.permissions'], $access->getCacheContexts());
-    $this->assertNull($access->getReason());
     $this->assertEquals([ScheduledTransitionsSettingsForm::SETTINGS_TAG], $access->getCacheTags());
   }
 
@@ -267,19 +288,8 @@ class ScheduledTransitionsEntityHooksUnitTest extends UnitTestCase {
     $entityHooks = new ScheduledTransitionsEntityHooks($this->testConfigFactory, $this->testEntityTypeManager, $this->testModerationInformation);
 
     $entity = $this->createMock(EntityInterface::class);
-    $entity->expects($this->once())
-      ->method('getEntityTypeId')
-      ->willReturn('foo');
-    $entity->expects($this->once())
-      ->method('bundle')
-      ->willReturn('bar');
-
     $operation = ScheduledTransitionsPermissions::ENTITY_OPERATION_VIEW_TRANSITIONS;
     $account = $this->createMock(AccountInterface::class);
-    $account->expects($this->once())
-      ->method('hasPermission')
-      ->with('view scheduled transitions foo bar')
-      ->willReturn(TRUE);
 
     $entity->expects($this->once())
       ->method('access')
@@ -289,7 +299,7 @@ class ScheduledTransitionsEntityHooksUnitTest extends UnitTestCase {
     /** @var \Drupal\Core\Access\AccessResultForbidden $access */
     $access = $entityHooks->entityAccess($entity, $operation, $account);
     $this->assertInstanceOf(AccessResultForbidden::class, $access);
-    $this->assertEquals(['user.permissions'], $access->getCacheContexts());
+    $this->assertEquals([], $access->getCacheContexts());
     $this->assertEquals('no can do', $access->getReason());
     $this->assertEquals([ScheduledTransitionsSettingsForm::SETTINGS_TAG], $access->getCacheTags());
   }
@@ -316,19 +326,8 @@ class ScheduledTransitionsEntityHooksUnitTest extends UnitTestCase {
     $entityHooks = new ScheduledTransitionsEntityHooks($this->testConfigFactory, $this->testEntityTypeManager, $this->testModerationInformation);
 
     $entity = $this->createMock(EntityInterface::class);
-    $entity->expects($this->once())
-      ->method('getEntityTypeId')
-      ->willReturn('foo');
-    $entity->expects($this->once())
-      ->method('bundle')
-      ->willReturn('bar');
-
     $operation = ScheduledTransitionsPermissions::ENTITY_OPERATION_ADD_TRANSITION;
     $account = $this->createMock(AccountInterface::class);
-    $account->expects($this->once())
-      ->method('hasPermission')
-      ->with('add scheduled transitions foo bar')
-      ->willReturn(TRUE);
 
     $entity->expects($this->once())
       ->method('access')
@@ -338,7 +337,7 @@ class ScheduledTransitionsEntityHooksUnitTest extends UnitTestCase {
     /** @var \Drupal\Core\Access\AccessResultForbidden $access */
     $access = $entityHooks->entityAccess($entity, $operation, $account);
     $this->assertInstanceOf(AccessResultForbidden::class, $access);
-    $this->assertEquals(['user.permissions'], $access->getCacheContexts());
+    $this->assertEquals([], $access->getCacheContexts());
     $this->assertEquals('no can do', $access->getReason());
     $this->assertEquals([ScheduledTransitionsSettingsForm::SETTINGS_TAG], $access->getCacheTags());
   }
