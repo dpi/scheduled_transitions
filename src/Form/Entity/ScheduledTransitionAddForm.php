@@ -125,11 +125,17 @@ class ScheduledTransitionAddForm extends ContentEntityForm {
     $newMetaWrapperId = 'new-meta-wrapper';
     $toOptionsWrapperId = 'to-options-wrapper';
 
+    $input = $form_state->getUserInput();
+    $revision_options = $this->getRevisionOptions($entity);
+
+    // Select the most recent revision if none other select.
+    $revision = $input['revision'] ?? key($revision_options);
+
     $form['scheduled_transitions']['revision'] = [
       '#type' => 'tableselect',
       '#header' => $header,
       '#caption' => $this->t('Select which revision you wish to move to a new state.'),
-      '#options' => $this->getRevisionOptions($entity),
+      '#options' => $revision_options,
       '#multiple' => FALSE,
       '#footer' => [
         [
@@ -144,6 +150,7 @@ class ScheduledTransitionAddForm extends ContentEntityForm {
         '::revisionProcess',
       ],
       '#new_meta_wrapper_id' => $newMetaWrapperId,
+      '#default_value' => $revision,
     ];
 
     $form['scheduled_transitions']['new_meta'] = [
@@ -158,8 +165,6 @@ class ScheduledTransitionAddForm extends ContentEntityForm {
 
     // Populate options with nothing.
     $stateOptions = [];
-    $input = $form_state->getUserInput();
-    $revision = $input['revision'] ?? 0;
     if ($revision > 0) {
       $entityStorage = $this->entityTypeManager->getStorage($entity->getEntityTypeId());
       $entityRevision = $entityStorage->loadRevision($revision);
