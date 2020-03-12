@@ -8,6 +8,7 @@ use Drupal\Core\Access\AccessManagerInterface;
 use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Entity\TranslatableInterface;
+use Drupal\scheduled_transitions\Entity\ScheduledTransition;
 use Drupal\views\Plugin\views\field\LinkBase;
 use Drupal\views\ResultRow;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -83,6 +84,12 @@ class ScheduledTransitionRevisionLinkField extends LinkBase {
     $entityRevision = $this->entityTypeManager
       ->getStorage($entity->getEntityTypeId())
       ->loadRevision($entityRevisionId);
+
+    if (!$entityRevision) {
+      // Use the original entity if this revision cannot be loaded.
+      $entityRevision = $entity;
+    }
+
     $language = $scheduledTransition->getEntityRevisionLanguage();
     if ($language && $entityRevision instanceof TranslatableInterface && $entityRevision->hasTranslation($language)) {
       $entityRevision = $entityRevision->getTranslation($language);
@@ -111,7 +118,10 @@ class ScheduledTransitionRevisionLinkField extends LinkBase {
       ->getStorage($entity->getEntityTypeId())
       ->loadRevision($entityRevisionId);
     if (!$entityRevision) {
-      return '';
+      $options = $scheduledTransition->getOptions();
+      return isset($options[ScheduledTransition::OPTION_LATEST_REVISION])
+        ? $this->t('Latest revision')
+        : $this->t('Dynamic');
     }
     $text = parent::renderLink($row);
     $this->options['alter']['query'] = $this->getDestinationArray();

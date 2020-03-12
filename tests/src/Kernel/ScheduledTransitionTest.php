@@ -544,9 +544,9 @@ class ScheduledTransitionTest extends KernelTestBase {
     // Also check context of logs, to ensure missing states are present as
     // 'Missing' strings.
     [2 => $context] = $logBuffer[0];
-    $this->assertEqual('- Unknown state -', $context['@original_state']);
-    $this->assertEqual('- Unknown state -', $context['@original_latest_state']);
-    $this->assertEqual('Published', $context['@new_state']);
+    $this->assertEquals('- Unknown state -', $context['@original_state']);
+    $this->assertEquals('- Unknown state -', $context['@original_latest_state']);
+    $this->assertEquals('Published', $context['@new_state']);
   }
 
   /**
