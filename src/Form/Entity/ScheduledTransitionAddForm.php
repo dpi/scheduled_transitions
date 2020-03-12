@@ -134,11 +134,19 @@ class ScheduledTransitionAddForm extends ContentEntityForm {
     $newMetaWrapperId = 'new-meta-wrapper';
     $toOptionsWrapperId = 'to-options-wrapper';
 
+    $input = $form_state->getUserInput();
+    $revisionOptions = $this->getRevisionOptions($entity);
+
+    // Use the selected option (if form is being rebuilt from AJAX), otherwise
+    // select latest revision if it exists.
+    $revision = $input['revision'] ??
+      (isset($revisionOptions[static::LATEST_REVISION]) ? static::LATEST_REVISION : NULL);
+
     $form['scheduled_transitions']['revision'] = [
       '#type' => 'tableselect',
       '#header' => $header,
       '#caption' => $this->t('Select which revision you wish to move to a new state.'),
-      '#options' => $this->getRevisionOptions($entity),
+      '#options' => $revisionOptions,
       '#multiple' => FALSE,
       '#footer' => [
         [
@@ -153,6 +161,7 @@ class ScheduledTransitionAddForm extends ContentEntityForm {
         '::revisionProcess',
       ],
       '#new_meta_wrapper_id' => $newMetaWrapperId,
+      '#default_value' => $revision,
     ];
 
     $form['scheduled_transitions']['new_meta'] = [
@@ -166,8 +175,6 @@ class ScheduledTransitionAddForm extends ContentEntityForm {
     $workflowPlugin = $workflow->getTypePlugin();
 
     // Populate options with nothing.
-    $input = $form_state->getUserInput();
-    $revision = $input['revision'] ?? 0;
     if (is_numeric($revision) && $revision > 0) {
       $entityStorage = $this->entityTypeManager->getStorage($entity->getEntityTypeId());
       $entityRevision = $entityStorage->loadRevision($revision);
