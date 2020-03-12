@@ -137,8 +137,10 @@ class ScheduledTransitionAddForm extends ContentEntityForm {
     $input = $form_state->getUserInput();
     $revisionOptions = $this->getRevisionOptions($entity);
 
-    // Select the most recent revision if none other select.
-    $revision = $input['revision'] ?? key($revisionOptions);
+    // Use the selected option (if form is being rebuilt from AJAX), otherwise
+    // select latest revision if it exists.
+    $revision = $input['revision'] ??
+      (isset($revisionOptions[static::LATEST_REVISION]) ? static::LATEST_REVISION : NULL);
 
     $form['scheduled_transitions']['revision'] = [
       '#type' => 'tableselect',
