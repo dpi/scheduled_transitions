@@ -177,6 +177,21 @@ class ScheduledTransitionsEntityHooks implements ContainerInjectionInterface {
       }
     }
 
+    if ($operation === Permissions::ENTITY_OPERATION_RESCHEDULE_TRANSITIONS) {
+      $access->cachePerPermissions();
+      $permission = Permissions::rescheduleScheduledTransitionsPermission($entity->getEntityTypeId(), $entity->bundle());
+      if ($account->hasPermission($permission)) {
+        $access->addCacheTags([SettingsForm::SETTINGS_TAG]);
+        $mirrorOperation = $this->mirrorOperations('reschedule scheduled transitions');
+        if (isset($mirrorOperation)) {
+          $access = $access->orIf($entity->access($mirrorOperation, $account, TRUE));
+        }
+      }
+      else {
+        $access = $access->andIf(AccessResult::forbidden("The '$permission' permission is required."));
+      }
+    }
+
     return $access;
   }
 

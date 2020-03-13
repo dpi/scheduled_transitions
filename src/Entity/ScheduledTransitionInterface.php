@@ -15,6 +15,11 @@ use Drupal\workflows\WorkflowInterface;
 interface ScheduledTransitionInterface extends ContentEntityInterface {
 
   /**
+   * Entity operation for rescheduling transitions for a scheduled transition.
+   */
+  public const ENTITY_OPERATION_RESCHEDULE = 'reschedule';
+
+  /**
    * Option to schedule latest revision.
    */
   public const OPTION_LATEST_REVISION = 'latest_revision';
@@ -82,6 +87,17 @@ interface ScheduledTransitionInterface extends ContentEntityInterface {
    *   The scheduled transition time.
    */
   public function getTransitionTime(): int;
+
+  /**
+   * Sets the transition time.
+   *
+   * @param int $time
+   *   The transition time.
+   *
+   * @return static
+   *   Returns entity for chaining.
+   */
+  public function setTransitionTime(int $time);
 
   /**
    * Sets the lock time.

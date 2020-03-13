@@ -62,3 +62,19 @@ function scheduled_transitions_update_8004(): void {
   $entityType->set('data_table', $entityTypeId);
   $definitionUpdateManager->updateEntityType($entityType);
 }
+
+/**
+ * Updates definitions with functionality necessary for rescheduling.
+ */
+function scheduled_transitions_update_8005(): void {
+  $entityTypeId = 'scheduled_transition';
+  $definitionUpdateManager = \Drupal::entityDefinitionUpdateManager();
+  $entityType = $definitionUpdateManager->getEntityType($entityTypeId);
+
+  $entityType->setFormClass('reschedule', 'Drupal\scheduled_transitions\Form\Entity\ScheduledTransitionRescheduleForm');
+  $routeProviders = $entityType->get('route_provider');
+  $routeProviders['html'] = 'Drupal\scheduled_transitions\Routing\ScheduledTransitionRouteProvider';
+  $entityType->set('route_provider', $routeProviders);
+  $entityType->setLinkTemplate('reschedule-form', '/admin/scheduled-transition/{scheduled_transition}/reschedule');
+  $definitionUpdateManager->updateEntityType($entityType);
+}
