@@ -4,6 +4,7 @@ declare(strict_types = 1);
 
 namespace Drupal\scheduled_transitions;
 
+use Drupal\Component\Serialization\Json;
 use Drupal\Core\Datetime\DateFormatterInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityListBuilder;
@@ -97,6 +98,31 @@ class ScheduledTransitionsListBuilder extends EntityListBuilder {
     $row['date'] = $this->dateFormatter->format($time);
 
     return $row + parent::buildRow($entity);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function getDefaultOperations(EntityInterface $entity) {
+    $operations = parent::getDefaultOperations($entity);
+
+    $rescheduleUrl = $entity->toUrl('reschedule-form');
+    if ($rescheduleUrl->access()) {
+      $operations['reschedule'] = [
+        'title' => $this->t('Reschedule'),
+        'weight' => 20,
+        'url' => $this->ensureDestination($rescheduleUrl),
+        'attributes' => [
+          'class' => ['use-ajax'],
+          'data-dialog-type' => 'modal',
+          'data-dialog-options' => Json::encode([
+            'width' => 500,
+          ]),
+        ],
+      ];
+    }
+
+    return $operations;
   }
 
 }

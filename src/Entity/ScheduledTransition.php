@@ -42,14 +42,16 @@ use Drupal\workflows\WorkflowInterface;
  *     "views_data" = "Drupal\scheduled_transitions\ScheduledTransitionsViewsData",
  *     "form" = {
  *       "delete" = "Drupal\Core\Entity\ContentEntityDeleteForm",
+ *       "reschedule" = "Drupal\scheduled_transitions\Form\Entity\ScheduledTransitionRescheduleForm",
  *     },
  *     "route_provider" = {
- *       "html" = "Drupal\Core\Entity\Routing\DefaultHtmlRouteProvider",
+ *       "html" = "Drupal\scheduled_transitions\Routing\ScheduledTransitionRouteProvider",
  *     }
  *   },
  *   links = {
  *     "collection" = "/admin/content/scheduled-transitions",
  *     "delete-form" = "/admin/scheduled-transition/{scheduled_transition}/delete",
+ *     "reschedule-form" = "/admin/scheduled-transition/{scheduled_transition}/reschedule",
  *   },
  * )
  */
@@ -180,6 +182,14 @@ class ScheduledTransition extends ContentEntityBase implements ScheduledTransiti
    */
   public function getTransitionTime(): int {
     return (int) $this->get('transition_on')->value;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setTransitionTime(int $time) {
+    $this->set('transition_on', $time);
+    return $this;
   }
 
   /**
