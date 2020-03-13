@@ -107,6 +107,10 @@ class ScheduledTransitionsListBuilder extends EntityListBuilder {
     $operations = parent::getDefaultOperations($entity);
 
     $rescheduleUrl = $entity->toUrl('reschedule-form');
+    // @todo improve access cacheability after
+    // https://www.drupal.org/project/drupal/issues/3106517 +
+    // https://www.drupal.org/project/drupal/issues/2473873 for now permissions
+    // cache context is added manually in buildOperations.
     if ($rescheduleUrl->access()) {
       $operations['reschedule'] = [
         'title' => $this->t('Reschedule'),
@@ -123,6 +127,19 @@ class ScheduledTransitionsListBuilder extends EntityListBuilder {
     }
 
     return $operations;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function buildOperations(EntityInterface $entity) {
+    $build = parent::buildOperations($entity);
+
+    // Add access cacheability, remove after @todo in getDefaultOperations is
+    // completed.
+    $build['#cache']['contexts'][] = 'user.permissions';
+
+    return $build;
   }
 
 }

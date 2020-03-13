@@ -98,8 +98,7 @@ class ScheduledTransitionRescheduleForm extends ContentEntityForm {
 
     $scheduledTransition = $this->getEntity();
     $scheduledTransition
-      ->setTransitionTime($date->getTimestamp())
-      ->save();
+      ->setTransitionTime($date->getTimestamp());
 
     $this->messenger()->addMessage($this->t('Rescheduled transition for @date', [
       '@date' => $this->dateFormatter->format($date->getTimestamp()),
@@ -115,16 +114,9 @@ class ScheduledTransitionRescheduleForm extends ContentEntityForm {
     $actions['submit'] = [
       '#type' => 'submit',
       '#value' => $this->t('Reschedule transition'),
-      '#submit' => ['::submitForm'],
+      '#submit' => ['::submitForm', '::save'],
     ];
     return $actions;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function save(array $form, FormStateInterface $form_state): void {
-    // Not saving.
   }
 
 }
