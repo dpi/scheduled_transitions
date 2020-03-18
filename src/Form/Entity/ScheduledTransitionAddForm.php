@@ -283,13 +283,6 @@ class ScheduledTransitionAddForm extends ContentEntityForm {
   }
 
   /**
-   * Ajax handler for to options container.
-   */
-  public function ajaxCallbackToOptions($form, FormStateInterface $form_state): array {
-    return $form['scheduled_transitions']['to_options'];
-  }
-
-  /**
    * {@inheritdoc}
    */
   public function validateForm(array &$form, FormStateInterface $form_state): void {
