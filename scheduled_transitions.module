@@ -115,6 +115,18 @@ function scheduled_transitions_theme(array $existing, string $type, string $them
  */
 function template_preprocess_scheduled_transitions_form_add(array &$variables): void {
   $variables['#attached']['library'][] = 'scheduled_transitions/form_add';
+  // Add classes to table cells so they can be styled.
+  foreach ($variables['form']['revision']['#options'] as $key => &$row) {
+    if (isset($row['state'])) {
+      $row['state']['class'][] = 'state';
+    }
+    if (isset($row['revision_time'])) {
+      $row['revision_time']['class'][] = 'revision-time';
+    }
+    if (isset($row['revision_author'])) {
+      $row['revision_author']['class'][] = 'revision-author';
+    }
+  }
 }
 
 /**
