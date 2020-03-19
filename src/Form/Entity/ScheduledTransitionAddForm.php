@@ -132,7 +132,6 @@ class ScheduledTransitionAddForm extends ContentEntityForm {
     }
 
     $newMetaWrapperId = 'new-meta-wrapper';
-    $toOptionsWrapperId = 'to-options-wrapper';
 
     $input = $form_state->getUserInput();
     $revisionOptions = $this->getRevisionOptions($entity);
@@ -202,11 +201,6 @@ class ScheduledTransitionAddForm extends ContentEntityForm {
         '#options' => $transitionOptions,
         '#empty_option' => $this->t('- Select -'),
         '#required' => TRUE,
-        '#ajax' => [
-          'callback' => '::ajaxCallbackToOptions',
-          'wrapper' => $toOptionsWrapperId,
-          'effect' => 'fade',
-        ],
       ];
 
       $form['scheduled_transitions']['new_meta']['on_help']['#markup'] = $this->t('<strong>on date</strong>');
@@ -220,19 +214,31 @@ class ScheduledTransitionAddForm extends ContentEntityForm {
       $form['scheduled_transitions']['new_meta']['transition_help']['#markup'] = $this->t('Select a revision above');
     }
 
-    /** @var \Drupal\workflows\TransitionInterface|null $transition */
-    $transition = !empty($input['transition']) ? $workflowPlugin->getTransition($input['transition']) : NULL;
     $form['scheduled_transitions']['to_options'] = [
       '#type' => 'container',
-      '#prefix' => '<div id="' . $toOptionsWrapperId . '">',
-      '#suffix' => '</div>',
     ];
-    if ($transition && $transition->to()->isDefaultRevisionState()) {
+
+    if (isset($toTransitions) && count($toTransitions) > 0) {
+      // Its too difficult to have a checkbox with default TRUE with conditional
+      // existence, as AJAX reloads, will sometimes show the checkbox as
+      // unchecked. See https://www.drupal.org/project/drupal/issues/1100170.
+      // Instead show this checkbox depending on value of other fields. The
+      // checkbox will always be present therefore preserving its state.
+      $conditions = [];
+      foreach ($toTransitions as $transition) {
+        if ($transition->to()->isDefaultRevisionState()) {
+          $conditions[] = [':input[name="transition"]' => ['value' => $transition->id()]];
+        }
+      }
+
       $form['scheduled_transitions']['to_options']['recreate_non_default_head'] = [
         '#type' => 'checkbox',
         '#title' => $this->t('Recreate pending revision'),
         '#description' => $this->t('Before creating this revision, check if there is any pending work. If so then recreate it. Regardless of choice, revisions are safely retained in history, and can be reverted manually.'),
         '#default_value' => TRUE,
+        '#states' => [
+          'visible' => $conditions,
+        ],
       ];
     }
 
@@ -274,13 +280,6 @@ class ScheduledTransitionAddForm extends ContentEntityForm {
    */
   public function ajaxCallbackNewMeta($form, FormStateInterface $form_state): array {
     return $form['scheduled_transitions']['new_meta'];
-  }
-
-  /**
-   * Ajax handler for to options container.
-   */
-  public function ajaxCallbackToOptions($form, FormStateInterface $form_state): array {
-    return $form['scheduled_transitions']['to_options'];
   }
 
   /**
