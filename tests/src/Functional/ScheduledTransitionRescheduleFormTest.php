@@ -38,6 +38,11 @@ class ScheduledTransitionRescheduleFormTest extends BrowserTestBase {
   ];
 
   /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'classy';
+
+  /**
    * Test rescheduling.
    */
   public function testLatestOptionPreselected() {

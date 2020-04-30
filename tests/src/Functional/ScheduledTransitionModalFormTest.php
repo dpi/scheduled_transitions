@@ -38,6 +38,11 @@ class ScheduledTransitionModalFormTest extends BrowserTestBase {
   ];
 
   /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'classy';
+
+  /**
    * Tests revision logs.
    */
   public function testRevisionLogHtml() {
