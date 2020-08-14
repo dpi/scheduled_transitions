@@ -6,6 +6,7 @@ namespace Drupal\Tests\scheduled_transitions\Kernel;
 
 use Drupal\Core\DependencyInjection\ContainerBuilder;
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Session\UserSession;
 use Drupal\entity_test_revlog\Entity\EntityTestWithRevisionLog;
 use Drupal\KernelTests\KernelTestBase;
 use Drupal\language\Entity\ConfigurableLanguage;
@@ -51,7 +52,7 @@ class ScheduledTransitionTest extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
     $this->installEntitySchema('st_entity_test');
     $this->installEntitySchema('st_nont_entity_test');
@@ -215,17 +216,17 @@ class ScheduledTransitionTest extends KernelTestBase {
     $this->assertEquals(3, $entity->getRevisionId());
 
     $newState = 'published';
-    $scheduledTransition = ScheduledTransition::create([
-      'entity' => $entity,
-      'entity_revision_id' => 2,
-      'author' => $author,
-      'workflow' => $workflow->id(),
-      'moderation_state' => $newState,
-      'transition_on' => (new \DateTime('2 Feb 2018 11am'))->getTimestamp(),
-      'options' => [
+    $scheduledTransition = ScheduledTransition::createFrom(
+        $workflow,
+        $newState,
+        $entity,
+        new \DateTime('2 Feb 2018 11am'),
+        $author
+      )
+      ->setOptions([
         [ScheduledTransition::OPTION_RECREATE_NON_DEFAULT_HEAD => TRUE],
-      ],
-    ]);
+      ])
+      ->setEntityRevisionId(2);
     $scheduledTransition->save();
 
     $this->runTransition($scheduledTransition);
@@ -292,17 +293,17 @@ class ScheduledTransitionTest extends KernelTestBase {
     $this->assertEquals(3, $entity->getRevisionId());
 
     $newState = 'published';
-    $scheduledTransition = ScheduledTransition::create([
-      'entity' => $entity,
-      'entity_revision_id' => 2,
-      'author' => $author,
-      'workflow' => $workflow->id(),
-      'moderation_state' => $newState,
-      'transition_on' => (new \DateTime('2 Feb 2018 11am'))->getTimestamp(),
-      'options' => [
+    $scheduledTransition = ScheduledTransition::createFrom(
+        $workflow,
+        $newState,
+        $entity,
+        new \DateTime('2 Feb 2018 11am'),
+        $author
+      )
+      ->setEntityRevisionId(2)
+      ->setOptions([
         [ScheduledTransition::OPTION_RECREATE_NON_DEFAULT_HEAD => TRUE],
-      ],
-    ]);
+      ]);
     $scheduledTransition->save();
 
     $this->runTransition($scheduledTransition);
@@ -341,17 +342,16 @@ class ScheduledTransitionTest extends KernelTestBase {
     ]);
     $entity->save();
 
-    $scheduledTransition = ScheduledTransition::create([
-      'entity' => $entity,
-      'entity_revision_id' => $entity->getRevisionId(),
-      'author' => 1,
-      'workflow' => $workflow->id(),
-      'moderation_state' => 'published',
-      'transition_on' => (new \DateTime('2 Feb 2018 11am'))->getTimestamp(),
-      'options' => [
+    $scheduledTransition = ScheduledTransition::createFrom(
+        $workflow,
+        'published',
+        $entity,
+        new \DateTime('2 Feb 2018 11am'),
+        new UserSession(['uid' => 1])
+      )
+      ->setOptions([
         ['recreate_non_default_head' => TRUE],
-      ],
-    ]);
+      ]);
     $scheduledTransition->save();
 
     $entity->delete();
@@ -390,27 +390,27 @@ class ScheduledTransitionTest extends KernelTestBase {
       'name' => $this->randomMachineName(),
     ]);
     $author->save();
-    $scheduledTransition = ScheduledTransition::create([
-      'entity' => $entity,
-      'entity_revision_id' => $originalDeRevisionId,
+    $scheduledTransition = ScheduledTransition::createFrom(
+        $workflow,
+        'published',
+        $entity,
+        new \DateTime('2 Feb 2018 11am'),
+        $author
+      )
+      ->setEntityRevisionId($originalDeRevisionId)
       // Transition 'de'.
-      'entity_revision_langcode' => 'de',
-      'author' => $author,
-      'workflow' => $workflow->id(),
-      'moderation_state' => 'published',
-      'transition_on' => (new \DateTime('2 Feb 2018 11am'))->getTimestamp(),
-    ]);
+      ->setEntityRevisionLanguage('de');
     $scheduledTransition->save();
-    $scheduledTransition = ScheduledTransition::create([
-      'entity' => $entity,
-      'entity_revision_id' => $originalFrRevisionId,
+    $scheduledTransition = ScheduledTransition::createFrom(
+        $workflow,
+        'published',
+        $entity,
+        new \DateTime('2 Feb 2018 11am'),
+        $author
+      )
+      ->setEntityRevisionId($originalFrRevisionId)
       // Transition 'fr'.
-      'entity_revision_langcode' => 'fr',
-      'author' => $author,
-      'workflow' => $workflow->id(),
-      'moderation_state' => 'published',
-      'transition_on' => (new \DateTime('2 Feb 2018 11am'))->getTimestamp(),
-    ]);
+      ->setEntityRevisionLanguage('fr');
     $scheduledTransition->save();
 
     $transitions = ScheduledTransition::loadMultiple();
@@ -443,17 +443,16 @@ class ScheduledTransitionTest extends KernelTestBase {
     ]);
     $entity->save();
 
-    $scheduledTransition = ScheduledTransition::create([
-      'entity' => $entity,
-      'entity_revision_id' => $entity->getRevisionId(),
-      'author' => 1,
-      'workflow' => $workflow->id(),
-      'moderation_state' => 'published',
-      'transition_on' => (new \DateTime('2 Feb 2018 11am'))->getTimestamp(),
-      'options' => [
+    $scheduledTransition = ScheduledTransition::createFrom(
+        $workflow,
+        'published',
+        $entity,
+        new \DateTime('2 Feb 2018 11am'),
+        new UserSession(['uid' => 1])
+      )
+      ->setOptions([
         ['recreate_non_default_head' => TRUE],
-      ],
-    ]);
+      ]);
     $scheduledTransition->save();
 
     /** @var \Drupal\Core\Entity\ContentEntityStorageInterface $storage */
@@ -511,17 +510,17 @@ class ScheduledTransitionTest extends KernelTestBase {
     $entity->save();
     $this->assertEquals(2, $entity->getRevisionId());
 
-    $scheduledTransition = ScheduledTransition::create([
-      'entity' => $entity,
-      'entity_revision_id' => 1,
-      'author' => $author,
-      'workflow' => $workflow->id(),
-      'moderation_state' => $testState3Name,
-      'transition_on' => (new \DateTime('2 Feb 2018 11am'))->getTimestamp(),
-      'options' => [
+    $scheduledTransition = ScheduledTransition::createFrom(
+        $workflow,
+        $testState3Name,
+        $entity,
+        new \DateTime('2 Feb 2018 11am'),
+        $author
+      )
+      ->setEntityRevisionId(1)
+      ->setOptions([
         [ScheduledTransition::OPTION_RECREATE_NON_DEFAULT_HEAD => TRUE],
-      ],
-    ]);
+      ]);
     $scheduledTransition->save();
 
     $workflow->getTypePlugin()->deleteState($testState1Name);
@@ -579,21 +578,22 @@ class ScheduledTransitionTest extends KernelTestBase {
     $this->assertEquals(1, $originalDeRevisionId);
     $this->assertEquals(1, $originalFrRevisionId);
 
+    /** @var \Drupal\user\UserInterface $author */
     $author = User::create([
       'uid' => 2,
       'name' => $this->randomMachineName(),
     ]);
     $author->save();
-    $scheduledTransition = ScheduledTransition::create([
-      'entity' => $entity,
-      'entity_revision_id' => 1,
+    $scheduledTransition = ScheduledTransition::createFrom(
+        $workflow,
+        'published',
+        $entity,
+        new \DateTime('2 Feb 2018 11am'),
+        $author
+      )
+      ->setEntityRevisionId(1)
       // Transition 'de'.
-      'entity_revision_langcode' => 'de',
-      'author' => $author,
-      'workflow' => $workflow->id(),
-      'moderation_state' => 'published',
-      'transition_on' => (new \DateTime('2 Feb 2018 11am'))->getTimestamp(),
-    ]);
+      ->setEntityRevisionLanguage('de');
     $scheduledTransition->save();
 
     $this->runTransition($scheduledTransition);
@@ -650,14 +650,13 @@ class ScheduledTransitionTest extends KernelTestBase {
     // At this point there should be a pending revision.
     $this->assertTrue($moderationInformation->hasPendingRevision($entity));
 
-    $scheduledTransition = ScheduledTransition::create([
-      'entity' => $entity,
-      'entity_revision_id' => $entity->getRevisionId(),
-      'author' => 1,
-      'workflow' => $workflow->id(),
-      'moderation_state' => 'published',
-      'transition_on' => (new \DateTime('1 year ago'))->getTimestamp(),
-    ]);
+    $scheduledTransition = ScheduledTransition::createFrom(
+      $workflow,
+      'published',
+      $entity,
+      new \DateTime('1 year ago'),
+      new UserSession(['uid' => 1])
+    );
     $scheduledTransition->save();
     $this->runTransition($scheduledTransition);
 
@@ -683,14 +682,13 @@ class ScheduledTransitionTest extends KernelTestBase {
     $entity->moderation_state = 'draft';
     $entity->save();
 
-    $scheduledTransition = ScheduledTransition::create([
-      'entity' => $entity,
-      'entity_revision_id' => $entity->getRevisionId(),
-      'author' => 1,
-      'workflow' => $workflow->id(),
-      'moderation_state' => 'published',
-      'transition_on' => (new \DateTime('1 year ago'))->getTimestamp(),
-    ]);
+    $scheduledTransition = ScheduledTransition::createFrom(
+      $workflow,
+      'published',
+      $entity,
+      new \DateTime('1 year ago'),
+      new UserSession(['uid' => 1])
+    );
     $scheduledTransition->save();
     $this->runTransition($scheduledTransition);
 
@@ -774,6 +772,15 @@ class ScheduledTransitionTest extends KernelTestBase {
     $container
       ->register($this->testLoggerServiceName, BufferingLogger::class)
       ->addTag('logger');
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function tearDown(): void {
+    // Clean out logs so their arn't sent out to stderr.
+    $this->container->get($this->testLoggerServiceName)->cleanLogs();
+    parent::tearDown();
   }
 
 }
