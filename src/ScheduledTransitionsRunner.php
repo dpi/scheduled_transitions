@@ -7,6 +7,7 @@ namespace Drupal\scheduled_transitions;
 use Drupal\Component\Datetime\TimeInterface;
 use Drupal\content_moderation\ModerationInformationInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\EntityChangedInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
@@ -19,6 +20,7 @@ use Drupal\scheduled_transitions\Event\ScheduledTransitionsEvents;
 use Drupal\scheduled_transitions\Event\ScheduledTransitionsNewRevisionEvent;
 use Drupal\scheduled_transitions\Exception\ScheduledTransitionMissingEntity;
 use Psr\Log\LoggerInterface;
+use Psr\Log\LogLevel;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 /**
@@ -163,42 +165,29 @@ class ScheduledTransitionsRunner implements ScheduledTransitionsRunnerInterface 
    *   The latest current revision.
    */
   protected function transitionEntity(ScheduledTransitionInterface $scheduledTransition, EntityInterface $newRevision, EntityInterface $latest): void {
+    /** @var \Drupal\Core\Entity\EntityInterface|\Drupal\Core\Entity\RevisionableInterface $newRevision */
+    /** @var \Drupal\Core\Entity\EntityInterface|\Drupal\Core\Entity\RevisionableInterface $latest */
     /** @var \Drupal\Core\Entity\RevisionableStorageInterface $entityStorage */
     $entityStorage = $this->entityTypeManager->getStorage($newRevision->getEntityTypeId());
 
     $settings = $this->configFactory->get('scheduled_transitions.settings');
 
     // Check this now before any new saves.
-    $isLatestRevisionPublished = $this->moderationInformation->isLiveRevision($latest);
+    // Remove if Scheduled Transitions supports non CM workflows in the future.
+    $isLatestRevisionPublished = NULL;
+    $originalLatestState = NULL;
+    $newState = NULL;
+    if ($latest instanceof ContentEntityInterface) {
+      $isLatestRevisionPublished = $this->moderationInformation->isLiveRevision($latest);
 
-    /** @var \Drupal\Core\Entity\EntityInterface|\Drupal\Core\Entity\RevisionableInterface $newRevision */
-    /** @var \Drupal\Core\Entity\EntityInterface|\Drupal\Core\Entity\RevisionableInterface $latest */
-    $entityRevisionId = $newRevision->getRevisionId();
+      $workflow = $this->moderationInformation->getWorkflowForEntity($latest);
+      $workflowPlugin = $workflow->getTypePlugin();
+      $states = $workflowPlugin->getStates();
+      $originalLatestState = $states[$latest->moderation_state->value ?? ''] ?? NULL;
+      $newState = $states[$scheduledTransition->getState()] ?? NULL;
+    }
 
-    $workflow = $this->moderationInformation->getWorkflowForEntity($latest);
-    $workflowPlugin = $workflow->getTypePlugin();
-    $states = $workflowPlugin->getStates();
-    $originalNewRevisionState = $states[$newRevision->moderation_state->value ?? ''] ?? NULL;
-    $originalLatestState = $states[$latest->moderation_state->value ?? ''] ?? NULL;
-    $newState = $states[$scheduledTransition->getState()] ?? NULL;
-
-    $targs = [
-      '@revision_id' => $entityRevisionId,
-      '@original_state' => $originalNewRevisionState ? $originalNewRevisionState->label() : $this->t('- Unknown state -'),
-      '@new_state' => $newState->label(),
-      '@original_revision_id' => $latest->getRevisionId(),
-      '@original_latest_state' => $originalLatestState ? $originalLatestState->label() : $this->t('- Unknown state -'),
-    ];
-
-    $tokenData = [
-      'scheduled-transitions' => [
-        'to-state' => $targs['@new_state'],
-        'from-state' => $targs['@original_state'],
-        'from-revision-id' => $targs['@revision_id'],
-        'latest-state' => $targs['@original_latest_state'],
-        'latest-revision-id' => $targs['@original_revision_id'],
-      ],
-    ];
+    $replacements = new ScheduledTransitionsTokenReplacements($scheduledTransition, $newRevision, $latest);
 
     // Start the transition process.
     // Determine if latest before calling setNewRevision on $newRevision.
@@ -218,23 +207,23 @@ class ScheduledTransitionsRunner implements ScheduledTransitionsRunnerInterface 
 
     // If publishing the latest revision, then only set moderation state.
     if ($newIsLatest) {
-      $this->logger->info('Transitioning latest revision from @original_state to @new_state', $targs);
+      $this->log(LogLevel::INFO, 'Transitioning latest revision from @original_state to @new_state', $replacements);
       if ($newRevision instanceof RevisionLogInterface) {
         $template = $settings->get('message_transition_latest');
-        $log = $this->token->replace($template, $tokenData);
-        $newRevision->setRevisionLogMessage($log);
-        $newRevision->setRevisionCreationTime($this->time->getRequestTime());
+        $newRevision
+          ->setRevisionLogMessage($this->tokenReplace($template, $replacements))
+          ->setRevisionCreationTime($this->time->getRequestTime());
       }
       $newRevision->save();
     }
     // Otherwise if publishing a revision not on HEAD, create new revisions.
     else {
-      $this->logger->info('Copied revision #@revision_id and changed from @original_state to @new_state', $targs);
+      $this->log(LogLevel::INFO, 'Copied revision #@revision_id and changed from @original_state to @new_state', $replacements);
       if ($newRevision instanceof RevisionLogInterface) {
         $template = $settings->get('message_transition_historical');
-        $log = $this->token->replace($template, $tokenData);
-        $newRevision->setRevisionLogMessage($log);
-        $newRevision->setRevisionCreationTime($this->time->getRequestTime());
+        $newRevision
+          ->setRevisionLogMessage($this->tokenReplace($template, $replacements))
+          ->setRevisionCreationTime($this->time->getRequestTime());
       }
       $newRevision->save();
 
@@ -246,17 +235,55 @@ class ScheduledTransitionsRunner implements ScheduledTransitionsRunnerInterface 
         // this revision must still exist.
         if (!$isLatestRevisionPublished && $originalLatestState) {
           $latest = $entityStorage->createRevision($latest, FALSE);
-          $this->logger->info('Reverted @original_latest_state revision #@original_revision_id back to top', $targs);
+          $this->log(LogLevel::INFO, 'Reverted @original_latest_state revision #@original_revision_id back to top', $replacements);
           if ($latest instanceof RevisionLogInterface) {
             $template = $settings->get('message_transition_copy_latest_draft');
-            $log = $this->token->replace($template, $tokenData);
-            $latest->setRevisionLogMessage($log);
-            $latest->setRevisionCreationTime($this->time->getRequestTime());
+            $latest
+              ->setRevisionLogMessage($this->tokenReplace($template, $replacements))
+              ->setRevisionCreationTime($this->time->getRequestTime());
           }
           $latest->save();
         }
       }
     }
+  }
+
+  /**
+   * Logs a message and adds context.
+   *
+   * @param mixed $level
+   *   Log level.
+   * @param string $message
+   *   A log message.
+   * @param \Drupal\scheduled_transitions\ScheduledTransitionsTokenReplacements $replacements
+   *   A replacements object.
+   */
+  protected function log($level, string $message, ScheduledTransitionsTokenReplacements $replacements): void {
+    $variables = $replacements->getReplacements();
+    $targs = [
+      '@new_state' => $variables['to-state'],
+      '@original_state' => $variables['from-state'],
+      '@revision_id' => $variables['from-revision-id'],
+      '@original_latest_state' => $variables['latest-state'],
+      '@original_revision_id' => $variables['latest-revision-id'],
+    ];
+    $this->logger->log($level, $message, $targs);
+  }
+
+  /**
+   * Replaces all tokens in a given string with appropriate values.
+   *
+   * @param string $text
+   *   A string containing replaceable tokens.
+   * @param \Drupal\scheduled_transitions\ScheduledTransitionsTokenReplacements $replacements
+   *   A replacements object.
+   *
+   * @return string
+   *   The string with the tokens replaced.
+   */
+  protected function tokenReplace(string $text, ScheduledTransitionsTokenReplacements $replacements): string {
+    $tokenData = ['scheduled-transitions' => $replacements->getReplacements()];
+    return $this->token->replace($text, $tokenData);
   }
 
 }

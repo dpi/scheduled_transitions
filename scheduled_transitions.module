@@ -159,7 +159,7 @@ function scheduled_transitions_token_info(): array {
     'description' => \t('The latest revision ID for an entity before transitioning.'),
   ];
 
-  $scheduledTransitions['latest-revision-id'] = [
+  $scheduledTransitions['latest-state'] = [
     'name' => \t('Latest Revision state'),
     'description' => \t('The latest revision state for an entity before transitioning.'),
   ];
